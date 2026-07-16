@@ -101,3 +101,15 @@ export function registerTransportHandlers(startAppListening: AppStartListening):
     }),
   });
 }
+
+
+// ═══════════════════════════════════════════════════════════════
+// 📤 REGISTRATION
+// ═══════════════════════════════════════════════════════════════
+
+import type { AudioSyncHandlerRegistration } from '../registry';
+
+export const registration: AudioSyncHandlerRegistration = {
+  id: 'transport',
+  register: registerTransportHandlers,
+};

@@ -26,3 +26,15 @@ export function registerMonitoringHandlers(startListening: AppStartListening): v
     },
   });
 }
+
+
+// ═══════════════════════════════════════════════════════════════
+// 📤 REGISTRATION
+// ═══════════════════════════════════════════════════════════════
+
+import type { AudioSyncHandlerRegistration } from '../registry';
+
+export const registration: AudioSyncHandlerRegistration = {
+  id: 'monitoring',
+  register: registerMonitoringHandlers,
+};

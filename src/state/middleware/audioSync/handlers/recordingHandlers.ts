@@ -439,3 +439,15 @@ async function _startWithCountIn(
     }
   });
 }
+
+
+// ═══════════════════════════════════════════════════════════════
+// 📤 REGISTRATION
+// ═══════════════════════════════════════════════════════════════
+
+import type { AudioSyncHandlerRegistration } from '../registry';
+
+export const registration: AudioSyncHandlerRegistration = {
+  id: 'recording',
+  register: registerRecordingHandlers,
+};

@@ -83,3 +83,15 @@ export function registerMetronomeHandlers(startAppListening: AppStartListening):
     }),
   });
 }
+
+
+// ═══════════════════════════════════════════════════════════════
+// 📤 REGISTRATION
+// ═══════════════════════════════════════════════════════════════
+
+import type { AudioSyncHandlerRegistration } from '../registry';
+
+export const registration: AudioSyncHandlerRegistration = {
+  id: 'metronome',
+  register: registerMetronomeHandlers,
+};

@@ -50,3 +50,15 @@ export function registerProjectHandlers(startAppListening: AppStartListening): v
     }),
   });
 }
+
+
+// ═══════════════════════════════════════════════════════════════
+// 📤 REGISTRATION
+// ═══════════════════════════════════════════════════════════════
+
+import type { AudioSyncHandlerRegistration } from '../registry';
+
+export const registration: AudioSyncHandlerRegistration = {
+  id: 'project',
+  register: registerProjectHandlers,
+};

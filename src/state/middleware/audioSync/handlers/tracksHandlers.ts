@@ -152,3 +152,15 @@ export function registerTracksHandlers(startAppListening: AppStartListening): vo
     }),
   });
 }
+
+
+// ═══════════════════════════════════════════════════════════════
+// 📤 REGISTRATION
+// ═══════════════════════════════════════════════════════════════
+
+import type { AudioSyncHandlerRegistration } from '../registry';
+
+export const registration: AudioSyncHandlerRegistration = {
+  id: 'tracks',
+  register: registerTracksHandlers,
+};

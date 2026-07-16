@@ -143,3 +143,15 @@ export function registerMixerHandlers(startAppListening: AppStartListening): voi
     }),
   });
 }
+
+
+// ═══════════════════════════════════════════════════════════════
+// 📤 REGISTRATION
+// ═══════════════════════════════════════════════════════════════
+
+import type { AudioSyncHandlerRegistration } from '../registry';
+
+export const registration: AudioSyncHandlerRegistration = {
+  id: 'mixer',
+  register: registerMixerHandlers,
+};
