@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 /**
  * MetronomeIcon
@@ -26,3 +31,16 @@ export function MetronomeIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+export const registration: IconEntry = {
+  id: 'transport.metronome',
+  category: 'transport',
+  component: MetronomeIcon,
+  label: 'Metronome',
+  aliases: ['metronome', 'click'],
+  keywords: ['metronome', 'click', 'tempo', 'beat', 'bpm'],
+};

@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 export function SaveProjectIcon(props: IconProps) {
   return (
@@ -12,3 +17,16 @@ export function SaveProjectIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+export const registration: IconEntry = {
+  id: 'toolbar.save-project',
+  category: 'toolbar',
+  component: SaveProjectIcon,
+  label: 'Save Project',
+  aliases: ['save-project'],
+  keywords: ['save', 'project', 'store', 'export'],
+};

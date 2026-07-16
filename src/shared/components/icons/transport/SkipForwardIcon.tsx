@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 export function SkipForwardIcon(props: IconProps) {
   return (
@@ -9,3 +14,16 @@ export function SkipForwardIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+export const registration: IconEntry = {
+  id: 'transport.skip-forward',
+  category: 'transport',
+  component: SkipForwardIcon,
+  label: 'Skip Forward',
+  aliases: ['skip-forward', 'next', 'forward'],
+  keywords: ['forward', 'next', 'skip'],
+};

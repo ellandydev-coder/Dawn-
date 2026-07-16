@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 export function UploadIcon(props: IconProps) {
   return (
@@ -10,3 +15,16 @@ export function UploadIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+export const registration: IconEntry = {
+  id: 'ui.upload',
+  category: 'ui',
+  component: UploadIcon,
+  label: 'Upload',
+  aliases: ['upload', 'import'],
+  keywords: ['upload', 'import', 'load', 'file'],
+};

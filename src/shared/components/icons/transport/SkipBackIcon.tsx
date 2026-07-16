@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 export function SkipBackIcon(props: IconProps) {
   return (
@@ -9,3 +14,16 @@ export function SkipBackIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+export const registration: IconEntry = {
+  id: 'transport.skip-back',
+  category: 'transport',
+  component: SkipBackIcon,
+  label: 'Skip Back',
+  aliases: ['skip-back', 'previous', 'rewind'],
+  keywords: ['back', 'previous', 'rewind', 'prev'],
+};

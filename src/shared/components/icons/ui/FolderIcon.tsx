@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 export function FolderIcon(props: IconProps) {
   return (
@@ -8,3 +13,16 @@ export function FolderIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+export const registration: IconEntry = {
+  id: 'ui.folder',
+  category: 'ui',
+  component: FolderIcon,
+  label: 'Folder',
+  aliases: ['folder', 'directory'],
+  keywords: ['folder', 'directory', 'files'],
+};

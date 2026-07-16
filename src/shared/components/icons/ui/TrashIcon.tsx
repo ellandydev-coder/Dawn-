@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 export function TrashIcon(props: IconProps) {
   return (
@@ -11,3 +16,16 @@ export function TrashIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+export const registration: IconEntry = {
+  id: 'ui.trash',
+  category: 'ui',
+  component: TrashIcon,
+  label: 'Delete',
+  aliases: ['trash', 'delete', 'remove'],
+  keywords: ['delete', 'remove', 'bin', 'discard'],
+};

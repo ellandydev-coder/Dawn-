@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 export function MicIcon(props: IconProps) {
   return (
@@ -11,3 +16,16 @@ export function MicIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+export const registration: IconEntry = {
+  id: 'mixer.mic',
+  category: 'mixer',
+  component: MicIcon,
+  label: 'Microphone',
+  aliases: ['mic', 'microphone'],
+  keywords: ['mic', 'microphone', 'input', 'record', 'voice'],
+};

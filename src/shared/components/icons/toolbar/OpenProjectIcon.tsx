@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 export function OpenProjectIcon(props: IconProps) {
   return (
@@ -12,3 +17,16 @@ export function OpenProjectIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+export const registration: IconEntry = {
+  id: 'toolbar.open-project',
+  category: 'toolbar',
+  component: OpenProjectIcon,
+  label: 'Open Project',
+  aliases: ['open-project', 'open'],
+  keywords: ['open', 'project', 'load', 'file'],
+};

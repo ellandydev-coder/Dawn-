@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 export function SaveIcon(props: IconProps) {
   return (
@@ -10,3 +15,16 @@ export function SaveIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+export const registration: IconEntry = {
+  id: 'ui.save',
+  category: 'ui',
+  component: SaveIcon,
+  label: 'Save',
+  aliases: ['save', 'floppy'],
+  keywords: ['save', 'store', 'disk', 'floppy'],
+};

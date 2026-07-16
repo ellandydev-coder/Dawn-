@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 export function LoopIcon(props: IconProps) {
   return (
@@ -13,3 +18,16 @@ export function LoopIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+export const registration: IconEntry = {
+  id: 'transport.loop',
+  category: 'transport',
+  component: LoopIcon,
+  label: 'Loop',
+  aliases: ['loop', 'repeat'],
+  keywords: ['loop', 'repeat', 'cycle'],
+};

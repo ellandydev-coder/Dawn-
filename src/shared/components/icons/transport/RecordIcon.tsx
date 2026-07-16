@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 export function RecordIcon(props: IconProps) {
   return (
@@ -11,3 +16,16 @@ export function RecordIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+export const registration: IconEntry = {
+  id: 'transport.record',
+  category: 'transport',
+  component: RecordIcon,
+  label: 'Record',
+  aliases: ['record'],
+  keywords: ['capture', 'rec', 'input'],
+};

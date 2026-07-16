@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 export function XIcon(props: IconProps) {
   return (
@@ -9,3 +14,16 @@ export function XIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+export const registration: IconEntry = {
+  id: 'ui.x',
+  category: 'ui',
+  component: XIcon,
+  label: 'Close',
+  aliases: ['x', 'close', 'cancel'],
+  keywords: ['close', 'cancel', 'dismiss', 'remove'],
+};
