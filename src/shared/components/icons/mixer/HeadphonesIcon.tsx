@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 export function HeadphonesIcon(props: IconProps) {
   return (
@@ -9,3 +14,16 @@ export function HeadphonesIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+export const registration: IconEntry = {
+  id: 'mixer.headphones',
+  category: 'mixer',
+  component: HeadphonesIcon,
+  label: 'Headphones',
+  aliases: ['headphones', 'phones', 'solo'],
+  keywords: ['headphones', 'monitor', 'solo', 'listen'],
+};

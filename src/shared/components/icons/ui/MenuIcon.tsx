@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 export function MenuIcon(props: IconProps) {
   return (
@@ -10,3 +15,16 @@ export function MenuIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+export const registration: IconEntry = {
+  id: 'ui.menu',
+  category: 'ui',
+  component: MenuIcon,
+  label: 'Menu',
+  aliases: ['menu', 'hamburger'],
+  keywords: ['menu', 'hamburger', 'bars', 'navigation'],
+};

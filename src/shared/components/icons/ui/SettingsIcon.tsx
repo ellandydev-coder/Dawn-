@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 export function SettingsIcon(props: IconProps) {
   return (
@@ -9,3 +14,16 @@ export function SettingsIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+export const registration: IconEntry = {
+  id: 'ui.settings',
+  category: 'ui',
+  component: SettingsIcon,
+  label: 'Settings',
+  aliases: ['settings', 'preferences', 'gear', 'cog'],
+  keywords: ['settings', 'preferences', 'config', 'gear', 'cog', 'options'],
+};

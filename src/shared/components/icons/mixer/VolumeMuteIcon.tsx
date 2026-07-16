@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 export function VolumeMuteIcon(props: IconProps) {
   return (
@@ -10,3 +15,16 @@ export function VolumeMuteIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+export const registration: IconEntry = {
+  id: 'mixer.volume-mute',
+  category: 'mixer',
+  component: VolumeMuteIcon,
+  label: 'Volume Mute',
+  aliases: ['volume-mute', 'mute'],
+  keywords: ['volume', 'mute', 'silent', 'off'],
+};

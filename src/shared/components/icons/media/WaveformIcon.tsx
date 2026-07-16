@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 export function WaveformIcon(props: IconProps) {
   return (
@@ -15,3 +20,16 @@ export function WaveformIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+export const registration: IconEntry = {
+  id: 'media.waveform',
+  category: 'media',
+  component: WaveformIcon,
+  label: 'Waveform',
+  aliases: ['waveform', 'wave'],
+  keywords: ['waveform', 'wave', 'audio', 'signal'],
+};
