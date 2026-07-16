@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 export function InfoIcon(props: IconProps) {
   return (
@@ -10,3 +15,16 @@ export function InfoIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+export const registration: IconEntry = {
+  id: 'toolbar.info',
+  category: 'toolbar',
+  component: InfoIcon,
+  label: 'Info',
+  aliases: ['info', 'information'],
+  keywords: ['info', 'help', 'about', 'details'],
+};

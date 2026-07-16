@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 export function VolumeLowIcon(props: IconProps) {
   return (
@@ -9,3 +14,16 @@ export function VolumeLowIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+export const registration: IconEntry = {
+  id: 'mixer.volume-low',
+  category: 'mixer',
+  component: VolumeLowIcon,
+  label: 'Volume Low',
+  aliases: ['volume-low'],
+  keywords: ['volume', 'low', 'quiet', 'soft'],
+};

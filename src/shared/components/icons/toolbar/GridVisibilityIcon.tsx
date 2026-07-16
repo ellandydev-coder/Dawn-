@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 export function GridVisibilityIcon(props: IconProps) {
   return (
@@ -15,3 +20,16 @@ export function GridVisibilityIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+export const registration: IconEntry = {
+  id: 'toolbar.grid-visibility',
+  category: 'toolbar',
+  component: GridVisibilityIcon,
+  label: 'Grid Visibility',
+  aliases: ['grid-visibility', 'grid'],
+  keywords: ['grid', 'visibility', 'show', 'lines'],
+};

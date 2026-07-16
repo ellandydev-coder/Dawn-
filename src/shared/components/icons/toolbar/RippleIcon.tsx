@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 export function RippleIcon(props: IconProps) {
   return (
@@ -11,3 +16,16 @@ export function RippleIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+export const registration: IconEntry = {
+  id: 'toolbar.ripple',
+  category: 'toolbar',
+  component: RippleIcon,
+  label: 'Ripple',
+  aliases: ['ripple'],
+  keywords: ['ripple', 'edit', 'shift', 'move'],
+};

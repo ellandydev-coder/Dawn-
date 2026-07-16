@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 export function SnapIcon(props: IconProps) {
   return (
@@ -15,3 +20,16 @@ export function SnapIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+export const registration: IconEntry = {
+  id: 'toolbar.snap',
+  category: 'toolbar',
+  component: SnapIcon,
+  label: 'Snap',
+  aliases: ['snap', 'magnet'],
+  keywords: ['snap', 'grid', 'align', 'magnet'],
+};

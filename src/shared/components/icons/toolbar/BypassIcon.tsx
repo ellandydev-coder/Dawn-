@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 export function BypassIcon(props: IconProps) {
   return (
@@ -9,3 +14,16 @@ export function BypassIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+export const registration: IconEntry = {
+  id: 'toolbar.bypass',
+  category: 'toolbar',
+  component: BypassIcon,
+  label: 'Bypass',
+  aliases: ['bypass', 'disable'],
+  keywords: ['bypass', 'disable', 'skip', 'off'],
+};

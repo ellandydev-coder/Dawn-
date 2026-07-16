@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 export function LockIcon(props: IconProps) {
   return (
@@ -9,3 +14,16 @@ export function LockIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+export const registration: IconEntry = {
+  id: 'toolbar.lock',
+  category: 'toolbar',
+  component: LockIcon,
+  label: 'Lock',
+  aliases: ['lock', 'padlock'],
+  keywords: ['lock', 'secure', 'protect', 'padlock'],
+};

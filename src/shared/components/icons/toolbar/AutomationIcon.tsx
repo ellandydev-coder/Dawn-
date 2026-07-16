@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 export function AutomationIcon(props: IconProps) {
   return (
@@ -8,3 +13,16 @@ export function AutomationIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+export const registration: IconEntry = {
+  id: 'toolbar.automation',
+  category: 'toolbar',
+  component: AutomationIcon,
+  label: 'Automation',
+  aliases: ['automation'],
+  keywords: ['automation', 'curve', 'wave', 'auto'],
+};

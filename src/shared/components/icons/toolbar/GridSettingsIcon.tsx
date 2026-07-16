@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 export function GridSettingsIcon(props: IconProps) {
   return (
@@ -11,3 +16,16 @@ export function GridSettingsIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+export const registration: IconEntry = {
+  id: 'toolbar.grid-settings',
+  category: 'toolbar',
+  component: GridSettingsIcon,
+  label: 'Grid Settings',
+  aliases: ['grid-settings'],
+  keywords: ['grid', 'settings', 'layout', 'blocks'],
+};
