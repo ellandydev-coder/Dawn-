@@ -1,19 +1,16 @@
-/**
- * AppProviders.tsx
- * ----------------
- * Punto único de montaje de:
- *  - Redux Provider
- *  - ShortcutManager (start + registro global)
- *  - ShortcutsOverlay (modal F1)
- *
- * Envuelve toda la app.
- */
+// src/app/providers/AppProviders.tsx
+//
+// Punto único de montaje de:
+//  - Redux Provider
+//  - ShortcutManager (start + bootstrap distribuido)
+//  - ShortcutsOverlay (modal F1)
 
 import { useEffect, type ReactNode } from 'react';
 import { Provider } from 'react-redux';
 import { store } from '@state/store';
 import { shortcutManager } from '@services/shortcuts/ShortcutManager';
-import { registerGlobalShortcuts } from '@app/config/keyboardShortcuts';
+import { bootstrapShortcuts } from '@services/shortcuts/registry';
+import { registration as appShortcuts } from '@app/config/shortcuts';
 import { ShortcutsOverlay } from '@features/shortcuts';
 
 interface AppProvidersProps {
@@ -31,23 +28,17 @@ export function AppProviders({ children }: AppProvidersProps) {
 }
 
 /**
- * Componente interno: arranca el ShortcutManager y registra los atajos globales.
- * Debe estar DENTRO del <Provider> para poder acceder al store.
+ * Componente interno: arranca el ShortcutManager y registra
+ * todos los atajos via el sistema distribuido.
+ * Debe estar DENTRO del <Provider> para acceder al store.
  */
 function ShortcutsBootstrap() {
   useEffect(() => {
     shortcutManager.start();
-    const unregister = registerGlobalShortcuts(store);
-
-    if (import.meta.env.DEV) {
-      console.info(
-        '%c⌨ Shortcuts activos. Prueba: window.__shortcuts.help()',
-        'color:#4ade80'
-      );
-    }
+    const cleanup = bootstrapShortcuts(store, [appShortcuts]);
 
     return () => {
-      unregister();
+      cleanup();
       shortcutManager.stop();
     };
   }, []);
