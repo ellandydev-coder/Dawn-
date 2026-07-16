@@ -1,20 +1,25 @@
 // src/services/plugins/PluginScanner.ts
 
+import { nativeBridge, isTauriEnv, type NativeScannedPlugin } from '@services/native/nativeBridge';
 import type {
   ScanOptions,
   ScanResult,
   ScannedPlugin,
 } from './pluginScanner.types';
+import { FX_PLUGIN_CATEGORIES, type FxPluginCategory } from '@domain/enums/FxPluginCategory';
+import { FX_PLUGIN_FORMATS, type FxPluginFormat } from '@domain/enums/FxPluginFormat';
 
 // ═══════════════════════════════════════════════════════════════
-// 🎯 MOCK DATA — plugins fake para el Walking Skeleton
+// 🎯 MOCK DATA — plugins fake (fallback en navegador sin Tauri)
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * Lista fake de plugins VST3 populares del mundo real.
- * Usada por el mock del scanner mientras no hay Rust IPC.
- * Cuando se implemente el Hito B (Tauri + Rust), esta lista
- * se elimina — los plugins vendrán del filesystem real.
+ * Lista fake de plugins VST3 populares.
+ * Se usa cuando la app corre en `npm run dev` (sin Tauri) —
+ * permite desarrollar UI sin depender del filesystem real.
+ *
+ * En Tauri (`npm run tauri:dev`), esta lista NO se usa: los
+ * plugins vienen del comando Rust `scan_vst_plugins`.
  */
 const MOCK_PLUGINS: readonly ScannedPlugin[] = [
   {
@@ -76,7 +81,7 @@ const MOCK_PLUGINS: readonly ScannedPlugin[] = [
     id: 'vst3.xfer.serum',
     name: 'Serum',
     vendor: 'Xfer Records',
-    category: 'utility',
+    category: 'other',
     format: 'vst3',
     version: '1.365',
     path: 'C:\\Program Files\\Common Files\\VST3\\Xfer\\Serum.vst3',
@@ -86,23 +91,52 @@ const MOCK_PLUGINS: readonly ScannedPlugin[] = [
 ];
 
 // ═══════════════════════════════════════════════════════════════
+// 🎯 NORMALIZACIÓN DEL PAYLOAD DE RUST
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Rust puede devolver categorías/formatos como strings arbitrarios.
+ * Normalizamos a los enums válidos del dominio para no romper el
+ * FxCatalog. Si el valor no es reconocido, cae a un default seguro.
+ */
+
+function normalizeCategory(cat: string): FxPluginCategory {
+  return (FX_PLUGIN_CATEGORIES as readonly string[]).includes(cat)
+    ? (cat as FxPluginCategory)
+    : 'other';
+}
+
+function normalizeFormat(fmt: string): FxPluginFormat {
+  return (FX_PLUGIN_FORMATS as readonly string[]).includes(fmt)
+    ? (fmt as FxPluginFormat)
+    : 'vst3';
+}
+
+// ═══════════════════════════════════════════════════════════════
 // 🎯 SCANNER
 // ═══════════════════════════════════════════════════════════════
 
 /**
  * Servicio de escaneo de plugins.
  *
- * ─── ESTADO ACTUAL (Hito A — Walking Skeleton) ───────────────
- * Este scanner es un MOCK. Ignora las `paths` recibidas y devuelve
- * siempre la misma lista de 6 plugins fake tras un delay artificial,
- * reportando progreso para validar el flow completo.
+ * ─── COMPORTAMIENTO SEGÚN ENTORNO ────────────────────────────
  *
- * ─── FUTURO (Hito B — Rust IPC) ──────────────────────────────
- * `scan()` invocará `nativeBridge.scanVstPlugins(paths)` que
- * llamará a Rust vía Tauri para recorrer el filesystem real
- * y parsear headers de archivos .vst3.
+ * En Tauri (`npm run tauri:dev`):
+ *   → invoca `nativeBridge.scanVstPlugins(paths)` que llama a Rust.
+ *   → Rust recorre el filesystem con `walkdir` y devuelve los
+ *     archivos/carpetas `.vst3` encontrados.
  *
- * ─── FUTURO (Hito D — Cache) ─────────────────────────────────
+ * En navegador (`npm run dev`, sin Tauri):
+ *   → cae al MOCK con 6 plugins fake tras un delay simulado.
+ *   → permite desarrollar UI sin necesitar Tauri corriendo.
+ *
+ * ─── LIMITACIONES ACTUALES (Hito B) ──────────────────────────
+ * • Los plugins devueltos por Rust tienen name/path reales
+ *   pero vendor/category/version son placeholders.
+ * • El Hito C parseará metadatos reales del VST3 SDK.
+ * • El Hito E añadirá streaming de progreso vía Tauri channels.
+ *
+ * ─── FUTURO (Hito D) ─────────────────────────────────────────
  * Añadirá lookup en IndexedDB antes de escanear + persistencia
  * de resultados. El re-scan invalidará el cache.
  */
@@ -118,9 +152,9 @@ class PluginScannerService {
   public async scan(options: ScanOptions): Promise<ScanResult> {
     const startTime = performance.now();
 
-    // ⚠️  Mock: ignoramos options.paths y devolvemos MOCK_PLUGINS
-    // En Hito B se sustituye por invoke IPC a Rust
-    const plugins = await this.scanMock(options);
+    const plugins = isTauriEnv()
+      ? await this.scanNative(options)
+      : await this.scanMock(options);
 
     const durationMs = performance.now() - startTime;
 
@@ -131,8 +165,62 @@ class PluginScannerService {
     };
   }
 
+  // ───────────────────────────────────────────────────────────
+  // 🦀 IMPLEMENTACIÓN NATIVA (Rust vía Tauri IPC)
+  // ───────────────────────────────────────────────────────────
+
   /**
-   * Implementación mock: simula escaneo con progreso realista.
+   * Llama al comando Rust `scan_vst_plugins` y convierte
+   * `NativeScannedPlugin[]` → `ScannedPlugin[]`.
+   *
+   * ⚠️  El progreso NO está streameado todavía (Hito E).
+   *   Por ahora reporta 0% al inicio y 100% al terminar,
+   *   con nombre "(escaneando filesystem…)".
+   */
+  private async scanNative(options: ScanOptions): Promise<ScannedPlugin[]> {
+    // Progreso inicial (Rust no reporta progreso hoy, solo start/end)
+    options.onProgress?.(0, '(escaneando filesystem…)');
+
+    const nativePlugins = await nativeBridge.scanVstPlugins([...options.paths]);
+
+    // Convertir + validar cada plugin devuelto por Rust
+    const plugins: ScannedPlugin[] = nativePlugins.map((raw) =>
+      this.fromNative(raw)
+    );
+
+    // Progreso final
+    options.onProgress?.(1, '(escaneo completo)');
+
+    return plugins;
+  }
+
+  /**
+   * Convierte un `NativeScannedPlugin` (payload crudo de Rust) a
+   * `ScannedPlugin` (tipo del scanner con categorías validadas).
+   *
+   * `available` se marca siempre a `true`: si Rust devolvió el plugin
+   * es porque existe en el filesystem — está disponible por definición.
+   */
+  private fromNative(raw: NativeScannedPlugin): ScannedPlugin {
+    return {
+      id: raw.id,
+      name: raw.name,
+      vendor: raw.vendor,
+      category: normalizeCategory(raw.category),
+      format: normalizeFormat(raw.format),
+      version: raw.version,
+      path: raw.path,
+      available: true,
+    };
+  }
+
+  // ───────────────────────────────────────────────────────────
+  // 🧪 IMPLEMENTACIÓN MOCK (fallback en navegador sin Tauri)
+  // ───────────────────────────────────────────────────────────
+
+  /**
+   * Simula escaneo con progreso realista.
+   * Devuelve los 6 plugins fake tras ~1.8 segundos.
    */
   private async scanMock(options: ScanOptions): Promise<ScannedPlugin[]> {
     const total = MOCK_PLUGINS.length;
@@ -141,12 +229,10 @@ class PluginScannerService {
     for (let i = 0; i < total; i++) {
       const plugin = MOCK_PLUGINS[i];
 
-      // Simular tiempo de parsing del plugin
       await this.delay(PluginScannerService.MOCK_DELAY_MS);
 
       found.push(plugin);
 
-      // Reportar progreso
       const progress = (i + 1) / total;
       options.onProgress?.(progress, plugin.name);
     }

@@ -1,4 +1,5 @@
 mod ffi;
+mod plugins;
 
 #[tauri::command]
 fn sumar(a: i32, b: i32) -> i32 {
@@ -23,7 +24,11 @@ pub fn run() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![sumar, saludar])
+        .invoke_handler(tauri::generate_handler![
+            sumar,
+            saludar,
+            plugins::scan_vst_plugins
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
