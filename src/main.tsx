@@ -14,10 +14,10 @@ import './index.css';
  * registries estén poblados cuando los componentes los lean.
  *
  * A medida que migremos más dominios al framework de registry
- * (Icons, FX Catalog, Shortcuts, etc.), sus bootstraps se
- * añaden aquí también.
+ * sus bootstraps se añaden aquí también.
  */
 import '@features/preferences/registry/bootstrap';
+import '@shared/components/icons/registry/bootstrap';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

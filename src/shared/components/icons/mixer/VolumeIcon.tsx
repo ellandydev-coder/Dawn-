@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 export function VolumeIcon(props: IconProps) {
   return (
@@ -10,3 +15,16 @@ export function VolumeIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+export const registration: IconEntry = {
+  id: 'mixer.volume',
+  category: 'mixer',
+  component: VolumeIcon,
+  label: 'Volume',
+  aliases: ['volume'],
+  keywords: ['sound', 'audio', 'level'],
+};

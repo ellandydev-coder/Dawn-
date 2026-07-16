@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 export function PlayIcon(props: IconProps) {
   return (
@@ -13,3 +18,21 @@ export function PlayIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+/*
+ * Este export lo detecta el bootstrap del registry de icons via
+ * Vite glob eager. Basta con estar presente para que <Icon name="..."/>
+ * pueda resolver este icono. No requiere tocar Icon.tsx ni el barrel.
+ */
+export const registration: IconEntry = {
+  id: 'transport.play',
+  category: 'transport',
+  component: PlayIcon,
+  label: 'Play',
+  aliases: ['play'],
+  keywords: ['playback', 'start', 'resume'],
+};

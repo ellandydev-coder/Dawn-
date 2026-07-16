@@ -1,129 +1,59 @@
-import type { ComponentType } from 'react';
-import type { IconName, IconProps } from './types';
+// src/shared/components/icons/Icon.tsx
 
-// Transport
-import { PlayIcon } from './transport/PlayIcon';
-import { PauseIcon } from './transport/PauseIcon';
-import { StopIcon } from './transport/StopIcon';
-import { RecordIcon } from './transport/RecordIcon';
-import { SkipBackIcon } from './transport/SkipBackIcon';
-import { SkipForwardIcon } from './transport/SkipForwardIcon';
-import { LoopIcon } from './transport/LoopIcon';
-import { MetronomeIcon } from './transport/MetronomeIcon';
+import type { IconProps } from './types';
+import { resolveIcon } from './registry';
 
-// Mixer
-import { VolumeIcon } from './mixer/VolumeIcon';
-import { VolumeMuteIcon } from './mixer/VolumeMuteIcon';
-import { VolumeLowIcon } from './mixer/VolumeLowIcon';
-import { HeadphonesIcon } from './mixer/HeadphonesIcon';
-import { MicIcon } from './mixer/MicIcon';
-
-// UI
-import { PlusIcon } from './ui/PlusIcon';
-import { XIcon } from './ui/XIcon';
-import { TrashIcon } from './ui/TrashIcon';
-import { SettingsIcon } from './ui/SettingsIcon';
-import { SaveIcon } from './ui/SaveIcon';
-import { UploadIcon } from './ui/UploadIcon';
-import { FolderIcon } from './ui/FolderIcon';
-
-// Media
-import { MusicNoteIcon } from './media/MusicNoteIcon';
-import { WaveformIcon } from './media/WaveformIcon';
-
-// Toolbar (REAPER-style)
-import { NewProjectIcon } from './toolbar/NewProjectIcon';
-import { OpenProjectIcon } from './toolbar/OpenProjectIcon';
-import { SaveProjectIcon } from './toolbar/SaveProjectIcon';
-import { InfoIcon } from './toolbar/InfoIcon';
-import { UndoIcon } from './toolbar/UndoIcon';
-import { RedoIcon } from './toolbar/RedoIcon';
-import { TimeSelectionIcon } from './toolbar/TimeSelectionIcon';
-import { AutomationIcon } from './toolbar/AutomationIcon';
-import { RippleIcon } from './toolbar/RippleIcon';
-import { GridSettingsIcon } from './toolbar/GridSettingsIcon';
-import { SnapIcon } from './toolbar/SnapIcon';
-import { GridVisibilityIcon } from './toolbar/GridVisibilityIcon';
-import { LockIcon } from './toolbar/LockIcon';
-import { BypassIcon } from './toolbar/BypassIcon';
-import { ScissorsIcon } from './toolbar/ScissorsIcon';
-import { LinkIcon } from './toolbar/LinkIcon';
-import { EnvelopeIcon } from './toolbar/EnvelopeIcon';
-
-type DynamicIconProps = IconProps & {
-  name: IconName;
-};
+// ═══════════════════════════════════════════════════════════════
+// 🎯 TIPOS
+// ═══════════════════════════════════════════════════════════════
 
 /**
- * Mapa: nombre → componente SVG.
+ * Props del componente <Icon> genérico.
+ *
+ * `name` es cualquier string:
+ *   • Id canónico jerárquico: "transport.play", "mixer.volume-mute"
+ *   • Alias: "play", "volume-mute" (si el icono lo declara)
+ *
+ * Para autocompletado usa el helper IconIds:
+ *   <Icon name={IconIds.transport.play} />
  */
-const ICON_MAP: Partial<Record<IconName, ComponentType<IconProps>>> = {
-  // Transport
-  play: PlayIcon,
-  pause: PauseIcon,
-  stop: StopIcon,
-  record: RecordIcon,
-  'skip-back': SkipBackIcon,
-  'skip-forward': SkipForwardIcon,
-  loop: LoopIcon,
-  metronome: MetronomeIcon,
+export interface DynamicIconProps extends IconProps {
+  /** Nombre del icono (id canónico o alias) */
+  name: string;
+}
 
-  // Mixer
-  volume: VolumeIcon,
-  'volume-mute': VolumeMuteIcon,
-  'volume-low': VolumeLowIcon,
-  headphones: HeadphonesIcon,
-  mic: MicIcon,
-
-  // UI
-  plus: PlusIcon,
-  x: XIcon,
-  trash: TrashIcon,
-  settings: SettingsIcon,
-  save: SaveIcon,
-  upload: UploadIcon,
-  folder: FolderIcon,
-
-  // Media
-  music: MusicNoteIcon,
-  'music-note': MusicNoteIcon,
-  waveform: WaveformIcon,
-
-  // Toolbar (REAPER-style)
-  'new-project': NewProjectIcon,
-  'open-project': OpenProjectIcon,
-  'save-project': SaveProjectIcon,
-  info: InfoIcon,
-  undo: UndoIcon,
-  redo: RedoIcon,
-  'time-selection': TimeSelectionIcon,
-  automation: AutomationIcon,
-  ripple: RippleIcon,
-  'grid-settings': GridSettingsIcon,
-  snap: SnapIcon,
-  'grid-visibility': GridVisibilityIcon,
-  lock: LockIcon,
-  bypass: BypassIcon,
-  scissors: ScissorsIcon,
-  link: LinkIcon,
-  envelope: EnvelopeIcon,
-};
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 /**
  * Icon
  * ----
  * Componente genérico que renderiza un icono SVG por nombre.
  *
+ * Resuelve el nombre usando el registry auto-poblado en bootstrap:
+ *   1. Busca match exacto por id canónico (ej: "transport.play")
+ *   2. Si no lo encuentra, busca en aliases (ej: "play")
+ *   3. Si no lo encuentra, loguea warning en dev y renderiza null
+ *
  * @example
- *   <Icon name="play" size={16} color="#7a8cff" />
+ *   <Icon name="transport.play" size={16} />
+ *   <Icon name="play" size={16} />                    ← alias
+ *   <Icon name={IconIds.mixer.volumeMute} size={16} />  ← autocompletado
  */
 export function Icon({ name, ...props }: DynamicIconProps) {
-  const IconComponent = ICON_MAP[name];
+  const entry = resolveIcon(name);
 
-  if (!IconComponent) {
-    console.warn(`[Icon] Icono desconocido: "${name}"`);
+  if (!entry) {
+    if (import.meta.env.DEV) {
+      console.warn(
+        `[Icon] Icono desconocido: "${name}". ` +
+        `¿Falta el export "registration" en el archivo del icono?`
+      );
+    }
     return null;
   }
 
+  const IconComponent = entry.component;
   return <IconComponent {...props} />;
 }

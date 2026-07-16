@@ -1,5 +1,10 @@
 import { IconBase } from '../IconBase';
 import type { IconProps } from '../types';
+import type { IconEntry } from '../registry';
+
+// ═══════════════════════════════════════════════════════════════
+// 🏗️ COMPONENTE
+// ═══════════════════════════════════════════════════════════════
 
 export function PlusIcon(props: IconProps) {
   return (
@@ -9,3 +14,16 @@ export function PlusIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📌 REGISTRO AUTO-DESCUBIERTO
+// ═══════════════════════════════════════════════════════════════
+
+export const registration: IconEntry = {
+  id: 'ui.plus',
+  category: 'ui',
+  component: PlusIcon,
+  label: 'Add',
+  aliases: ['plus', 'add'],
+  keywords: ['create', 'new', 'insert'],
+};
