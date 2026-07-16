@@ -7,6 +7,14 @@ import {
   selectVstPreferences,
 } from '@state/slices/preferences/preferencesSlice';
 import {
+  selectIsScanning,
+  selectScanProgress,
+  selectCurrentPluginName,
+  selectLastScanDate,
+  selectFoundIds,
+} from '@state/slices/pluginScan/pluginScanSlice';
+import { startPluginScan } from '@services/plugins/pluginScanner.thunks';
+import {
   VST_KNOB_MODES,
   VST_AUTOMATION_NOTIFICATION_MODES,
   KNOB_MODE_LABELS,
@@ -45,6 +53,23 @@ function useVstPatcher<K extends keyof VstPreferences>(
   );
 }
 
+/**
+ * Formatea un timestamp como "hace X minutos" / "hace X horas".
+ * Fallback: fecha local completa.
+ */
+function formatRelativeTime(timestamp: number): string {
+  const diffMs = Date.now() - timestamp;
+  const diffMin = Math.floor(diffMs / 60_000);
+
+  if (diffMin < 1) return 'hace unos segundos';
+  if (diffMin < 60) return `hace ${diffMin} min`;
+
+  const diffHours = Math.floor(diffMin / 60);
+  if (diffHours < 24) return `hace ${diffHours} h`;
+
+  return new Date(timestamp).toLocaleDateString();
+}
+
 // ═══════════════════════════════════════════════════════════════
 // 🏗️ COMPONENTE
 // ═══════════════════════════════════════════════════════════════
@@ -59,9 +84,19 @@ function useVstPatcher<K extends keyof VstPreferences>(
  * o para dispatch de acciones genéricas del slice.
  */
 function VstPanelBase(_props: PreferencePanelComponentProps) {
-  // ─── Store ──────────────────────────────────────────────────
+  const dispatch = useAppDispatch();
+
+  // ─── Store: preferencias ────────────────────────────────────
 
   const prefs = useAppSelector(selectVstPreferences);
+
+  // ─── Store: estado del scanner ──────────────────────────────
+
+  const isScanning = useAppSelector(selectIsScanning);
+  const scanProgress = useAppSelector(selectScanProgress);
+  const currentPluginName = useAppSelector(selectCurrentPluginName);
+  const lastScanDate = useAppSelector(selectLastScanDate);
+  const foundIds = useAppSelector(selectFoundIds);
 
   // ─── Patchers atómicos (uno por setting) ────────────────────
 
@@ -77,15 +112,35 @@ function VstPanelBase(_props: PreferencePanelComponentProps) {
   const setUad1SyncMode           = useVstPatcher('uad1SyncMode');
   const setAllowCompleteUnload    = useVstPatcher('allowCompleteUnload');
 
-  // ─── Handlers de botones de acción (placeholders) ───────────
+  // ─── Handlers de acción ─────────────────────────────────────
 
   const handleRescan = useCallback(() => {
-    console.info('[VST] Rescan plugins requested (TODO)');
-  }, []);
+    dispatch(startPluginScan());
+  }, [dispatch]);
 
   const handleEditPathList = useCallback(() => {
     console.info('[VST] Edit path list requested (TODO)');
   }, []);
+
+  // ─── Texto dinámico del botón de scan ───────────────────────
+
+  const scanButtonLabel = useMemo(() => {
+    if (isScanning) {
+      const pct = Math.round(scanProgress * 100);
+      return currentPluginName
+        ? `Escaneando ${currentPluginName}… (${pct}%)`
+        : `Escaneando… (${pct}%)`;
+    }
+    return 'Re-scan…';
+  }, [isScanning, scanProgress, currentPluginName]);
+
+  // ─── Nota informativa del último scan ───────────────────────
+
+  const lastScanNote = useMemo(() => {
+    if (isScanning) return null;
+    if (lastScanDate === null) return null;
+    return `Último escaneo: ${formatRelativeTime(lastScanDate)} · ${foundIds.length} plugin(s) encontrados`;
+  }, [isScanning, lastScanDate, foundIds.length]);
 
   // ─── Opciones de los selects (memoizadas) ───────────────────
 
@@ -139,9 +194,10 @@ function VstPanelBase(_props: PreferencePanelComponentProps) {
               type="button"
               className="vst-panel__btn"
               onClick={handleRescan}
-              title="Escanear plugins ahora"
+              disabled={isScanning}
+              title={isScanning ? 'Escaneo en curso…' : 'Escanear plugins ahora'}
             >
-              Re-scan…
+              {scanButtonLabel}
             </button>
 
             <PrefCheckbox
@@ -161,6 +217,12 @@ function VstPanelBase(_props: PreferencePanelComponentProps) {
               Edit path list…
             </button>
           </div>
+
+          {lastScanNote && (
+            <p className="vst-panel__note vst-panel__note--info">
+              {lastScanNote}
+            </p>
+          )}
 
           <p className="vst-panel__note">
             If multiple VSTs are scanned with the same dll name, only one will

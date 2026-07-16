@@ -20,6 +20,7 @@ import historyReducer from '@state/slices/history/historySlice';
 import recordingReducer from '@state/slices/recording/recordingSlice';
 import fxChainsReducer from '@state/slices/fxChains/fxChainsSlice';
 import preferencesReducer from '@state/slices/preferences/preferencesSlice';
+import pluginScanReducer from '@state/slices/pluginScan/pluginScanSlice';
 
 import { audioSyncMiddleware } from '@state/middleware/audioSyncMiddleware';
 import { undoMiddleware } from '@state/middleware/undoMiddleware';
@@ -43,6 +44,7 @@ export const store = configureStore({
     recording: recordingReducer,
     fxChains: fxChainsReducer,
     preferences: preferencesReducer,
+    pluginScan: pluginScanReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware()
