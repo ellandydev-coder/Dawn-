@@ -3,7 +3,6 @@
 import type { FxPluginInfo } from '@domain/models/FxPluginInfo';
 import type { FxPluginCategory } from '@domain/enums/FxPluginCategory';
 import type { FxPluginFormat } from '@domain/enums/FxPluginFormat';
-import { BUILT_IN_FX_CATALOG } from './builtInFxCatalog';
 
 // ═══════════════════════════════════════════════════════════════
 // 🎯 FxCatalog
@@ -13,12 +12,16 @@ import { BUILT_IN_FX_CATALOG } from './builtInFxCatalog';
  * Catálogo central de plugins FX disponibles en DAWN.
  *
  * Fuentes actuales:
- *   • Built-in (siempre presentes)
+ *   • Built-in (descubiertos vía registry auto-poblado en el bootstrap)
  *
  * Fuentes futuras:
  *   • WASM plugins de terceros (cargados dinámicamente)
  *   • VST3 escaneados vía Tauri IPC
  *   • JSFX scripts (estilo REAPER)
+ *
+ * ⚠️  Este catálogo se puebla desde `services/fx-catalog/registry/bootstrap.ts`.
+ * Nace VACÍO — hay que importar el bootstrap en `main.tsx` para que se
+ * llene con los plugins descubiertos por glob.
  *
  * Este servicio es un singleton en memoria. La persistencia
  * de "recently used" / "favorites" vive en un slice aparte
@@ -26,13 +29,6 @@ import { BUILT_IN_FX_CATALOG } from './builtInFxCatalog';
  */
 class FxCatalogService {
   private readonly _plugins = new Map<string, FxPluginInfo>();
-
-  constructor() {
-    // Cargar built-in al arranque
-    for (const plugin of BUILT_IN_FX_CATALOG) {
-      this._plugins.set(plugin.id, plugin);
-    }
-  }
 
   /** Devuelve todos los plugins del catálogo */
   public getAll(): readonly FxPluginInfo[] {
@@ -72,21 +68,23 @@ class FxCatalogService {
 
   /**
    * Registra un plugin dinámicamente.
-   * Útil para plugins de terceros cargados en runtime.
-   * Si el id ya existe, se sobrescribe (con warning en dev).
+   * Es el punto de entrada usado por el bootstrap del registry
+   * y por plugins de terceros cargados en runtime.
+   * Si el id ya existe, se sobrescribe (silencioso — el registry
+   * ya loguea duplicates).
    */
   public register(plugin: FxPluginInfo): void {
-    if (this._plugins.has(plugin.id) && import.meta.env?.DEV) {
-      console.warn(
-        `[FxCatalog] Plugin '${plugin.id}' ya existe. Sobrescribiendo.`
-      );
-    }
     this._plugins.set(plugin.id, plugin);
   }
 
   /** Elimina un plugin del catálogo (para hot-reload o unregister) */
   public unregister(id: string): boolean {
     return this._plugins.delete(id);
+  }
+
+  /** Limpia todo el catálogo (idempotencia en StrictMode DEV) */
+  public clear(): void {
+    this._plugins.clear();
   }
 
   /** Total de plugins registrados */

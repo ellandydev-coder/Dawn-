@@ -18,6 +18,7 @@ import './index.css';
  */
 import '@features/preferences/registry/bootstrap';
 import '@shared/components/icons/registry/bootstrap';
+import '@services/fx-catalog/registry/bootstrap';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
