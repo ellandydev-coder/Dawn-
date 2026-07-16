@@ -1,0 +1,369 @@
+/* ============================================================
+   CURSORES DE TIMELINE — Estilo DAW profesional (v10/10)
+   ============================================================ */
+
+/* ══════════════════════════════════
+   🟠 PLAYHEAD (línea de reproducción)
+   ══════════════════════════════════ */
+
+.ws-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: #ff8800;
+  z-index: 30;
+  pointer-events: none;
+  box-shadow: 0 0 4px rgba(255, 136, 0, 0.55);
+  will-change: transform;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+/* Triángulo indicador arriba (típico DAW) */
+.ws-playhead::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 8px solid #ff8800;
+  filter: drop-shadow(0 1px 2px rgba(255, 136, 0, 0.7));
+}
+
+/* Estados */
+.ws-playhead.is-playing {
+  animation: playhead-glow 1.6s ease-in-out infinite;
+}
+
+.ws-playhead.is-paused {
+  background: #f59e0b;
+  box-shadow: 0 0 3px rgba(245, 158, 11, 0.4);
+}
+
+.ws-playhead.is-recording {
+  background: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.8);
+  animation: playhead-recording 1s ease-in-out infinite;
+}
+
+.ws-playhead.is-recording::before {
+  border-top-color: #ef4444;
+  filter: drop-shadow(0 1px 3px rgba(239, 68, 68, 0.9));
+}
+
+@keyframes playhead-glow {
+  0%, 100% {
+    box-shadow: 0 0 4px rgba(255, 136, 0, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 8px rgba(255, 136, 0, 0.85);
+  }
+}
+
+@keyframes playhead-recording {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.8);
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(239, 68, 68, 1);
+    opacity: 0.85;
+  }
+}
+
+/* ══════════════════════════════════
+   🟢 EDIT CURSOR (posición de edición)
+   ══════════════════════════════════ */
+
+.ws-edit-cursor {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #4ade80;
+  opacity: 0.9;
+  z-index: 25;
+  pointer-events: none;
+  box-shadow: 0 0 4px rgba(74, 222, 128, 0.5);
+  transition: opacity 0.15s;
+  will-change: transform;
+}
+
+.ws-edit-cursor.is-hidden {
+  opacity: 0;
+}
+
+/* Marker en el ruler */
+.ws-edit-cursor-marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #4ade80;
+  opacity: 0.9;
+  pointer-events: none;
+  z-index: 15;
+}
+
+/* Triángulo en el ruler */
+.ws-edit-cursor-triangle-ruler {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 8px solid #4ade80;
+  filter: drop-shadow(0 1px 2px rgba(74, 222, 128, 0.6));
+  transition: transform 0.1s;
+}
+
+.ws-edit-cursor-triangle-ruler:hover {
+  transform: translateX(-50%) scale(1.15);
+}
+
+/* ══════════════════════════════════
+   🔵 SELECTION REGION (rango seleccionado)
+   ══════════════════════════════════ */
+
+.ws-selection-region {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(122, 140, 255, 0.15);
+  border-left: 1px solid rgba(122, 140, 255, 0.6);
+  border-right: 1px solid rgba(122, 140, 255, 0.6);
+  pointer-events: none;
+  z-index: 20;
+  will-change: left, width;
+}
+
+.ws-selection-region.is-active {
+  background: rgba(122, 140, 255, 0.22);
+  border-color: rgba(122, 140, 255, 0.9);
+}
+
+/* Marcadores de inicio/fin de selección */
+.ws-selection-region::before,
+.ws-selection-region::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #7a8cff;
+  box-shadow: 0 0 4px rgba(122, 140, 255, 0.7);
+}
+
+.ws-selection-region::before {
+  left: -1px;
+}
+
+.ws-selection-region::after {
+  right: -1px;
+}
+
+/* ══════════════════════════════════
+   🟣 LOOP REGION (loop entre A y B)
+   ══════════════════════════════════ */
+
+.ws-loop-region {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(168, 85, 247, 0.1);
+  border-left: 2px dashed rgba(168, 85, 247, 0.7);
+  border-right: 2px dashed rgba(168, 85, 247, 0.7);
+  pointer-events: none;
+  z-index: 18;
+}
+
+.ws-loop-region.is-active {
+  background: rgba(168, 85, 247, 0.18);
+  border-style: solid;
+  border-color: #a855f7;
+  box-shadow:
+    inset 2px 0 0 rgba(168, 85, 247, 0.4),
+    inset -2px 0 0 rgba(168, 85, 247, 0.4);
+}
+
+/* Marker de loop en ruler */
+.ws-loop-marker {
+  position: absolute;
+  top: 0;
+  height: 12px;
+  padding: 0 4px;
+  background: #a855f7;
+  color: white;
+  font-size: 8px;
+  font-weight: 700;
+  border-radius: 0 0 3px 3px;
+  pointer-events: none;
+  letter-spacing: 0.5px;
+  z-index: 22;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.ws-loop-marker.is-start {
+  transform: translateX(0);
+}
+
+.ws-loop-marker.is-end {
+  transform: translateX(-100%);
+}
+
+/* ══════════════════════════════════
+   🎯 SNAP INDICATOR
+   ══════════════════════════════════ */
+
+.ws-snap-indicator {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: #fbbf24;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 28;
+  transition: opacity 0.1s;
+  box-shadow: 0 0 6px rgba(251, 191, 36, 0.8);
+}
+
+.ws-snap-indicator.is-active {
+  opacity: 1;
+}
+
+/* Pequeño círculo en el snap */
+.ws-snap-indicator::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  background: #fbbf24;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(251, 191, 36, 1);
+}
+
+/* ══════════════════════════════════
+   📏 HOVER GUIDE (línea al pasar mouse)
+   ══════════════════════════════════ */
+
+.ws-hover-guide {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.15);
+  pointer-events: none;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.ws-hover-guide.is-visible {
+  opacity: 1;
+}
+
+/* Tooltip de tiempo al pasar mouse */
+.ws-hover-time-tooltip {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 6px;
+  background: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  font-size: 9px;
+  font-family: 'JetBrains Mono', monospace;
+  border-radius: 2px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 100;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* ══════════════════════════════════
+   🎬 RECORDING INDICATOR (área grabando)
+   ══════════════════════════════════ */
+
+.ws-recording-region {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(239, 68, 68, 0.1) 0%,
+    rgba(239, 68, 68, 0.25) 50%,
+    rgba(239, 68, 68, 0.1) 100%
+  );
+  background-size: 200% 100%;
+  animation: recording-scroll 2s linear infinite;
+  pointer-events: none;
+  z-index: 15;
+  border-left: 1px solid rgba(239, 68, 68, 0.5);
+}
+
+@keyframes recording-scroll {
+  0%   { background-position: 0% 0%; }
+  100% { background-position: -200% 0%; }
+}
+
+/* ══════════════════════════════════
+   ACCESIBILIDAD — reduce motion
+   ══════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  .ws-playhead.is-playing,
+  .ws-playhead.is-recording,
+  .ws-recording-region {
+    animation: none;
+  }
+
+  .ws-edit-cursor-triangle-ruler,
+  .ws-edit-cursor,
+  .ws-snap-indicator,
+  .ws-hover-guide {
+    transition: none;
+  }
+
+  .ws-edit-cursor-triangle-ruler:hover {
+    transform: translateX(-50%);
+  }
+}
+
+/* ══════════════════════════════════
+   HIGH CONTRAST MODE
+   ══════════════════════════════════ */
+
+@media (prefers-contrast: more) {
+  .ws-playhead {
+    width: 2px;
+    background: #ff6600;
+    box-shadow: 0 0 0 1px #000;
+  }
+
+  .ws-edit-cursor,
+  .ws-edit-cursor-marker {
+    width: 3px;
+    background: #22c55e;
+    box-shadow: 0 0 0 1px #000;
+  }
+
+  .ws-selection-region {
+    background: rgba(122, 140, 255, 0.3);
+    border-width: 2px;
+  }
+
+  .ws-loop-region {
+    border-width: 3px;
+  }
+}

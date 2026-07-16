@@ -1,0 +1,170 @@
+/* ============================================================
+   FADER CONTROL — Estilo REAPER v6/v7 (v10/10)
+   Consistente con MasterChannel
+   ============================================================ */
+
+.fader-container {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  padding: 0;
+  user-select: none;
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* ══════════════════════════════════
+   LANE — hit-area completa
+   ══════════════════════════════════ */
+.fader-lane {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  cursor: grab;
+  background: transparent;
+  pointer-events: auto;
+  box-sizing: border-box;
+  touch-action: none;
+  position: relative;
+  outline: none;
+  border-radius: 3px;
+  transition: background 0.12s;
+}
+
+.fader-lane:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.fader-lane:active,
+.fader-lane.is-dragging {
+  cursor: grabbing;
+}
+
+/* ✅ Estado deshabilitado */
+.fader-lane.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* ✅ Focus accesible por teclado */
+.fader-lane:focus-visible {
+  outline: 2px solid #7a8cff;
+  outline-offset: 2px;
+}
+
+/* ══════════════════════════════════
+   TRACK VISUAL — carril negro
+   ══════════════════════════════════ */
+.fader-track-visual {
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg,
+    #0a0a0a 0%,
+    #1a1a1a 50%,
+    #0a0a0a 100%
+  );
+  border: 1px solid #000;
+  border-radius: 2px;
+  position: relative;
+  pointer-events: none;
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.9),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+  transition: border-color 0.12s;
+}
+
+.fader-lane.is-dragging .fader-track-visual {
+  border-color: #4a4a4a;
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.9),
+    0 0 4px rgba(122, 140, 255, 0.3);
+}
+
+/* ✅ Marca opcional de 0dB (unity gain) */
+.fader-track-visual::after {
+  content: '';
+  position: absolute;
+  top: 9.09%; /* aprox posición de 0dB con escala -60 a +6 */
+  left: -3px;
+  right: -3px;
+  height: 1px;
+  background: rgba(122, 140, 255, 0.3);
+  pointer-events: none;
+}
+
+/* ══════════════════════════════════
+   THUMB — capuchón metálico
+   ══════════════════════════════════ */
+.fader-thumb {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(to bottom,
+    #f0f0f0 0%,
+    #c8c8c8 30%,
+    #808080 48%,
+    #3a3a3a 50%,
+    #808080 52%,
+    #c8c8c8 70%,
+    #f0f0f0 100%
+  );
+  border: 1px solid #000;
+  border-radius: 2px;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  z-index: 3;
+  transition: box-shadow 0.12s, filter 0.12s;
+  will-change: top;
+}
+
+/* ✅ Hover del thumb (a través del lane) */
+.fader-lane:hover .fader-thumb {
+  filter: brightness(1.08);
+}
+
+/* ✅ Estado dragging del thumb */
+.fader-lane.is-dragging .fader-thumb {
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.9),
+    0 0 8px rgba(122, 140, 255, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+  filter: brightness(1.12);
+}
+
+/* ✅ Marca central horizontal */
+.fader-thumb::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -2px;
+  right: -2px;
+  height: 2px;
+  background: #000;
+  transform: translateY(-50%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.15);
+  pointer-events: none;
+}
+
+/* ══════════════════════════════════
+   ACCESIBILIDAD — reduce motion
+   ══════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .fader-lane,
+  .fader-track-visual,
+  .fader-thumb {
+    transition: none;
+  }
+
+  .fader-lane:hover .fader-thumb,
+  .fader-lane.is-dragging .fader-thumb {
+    filter: none;
+  }
+}

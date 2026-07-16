@@ -1,0 +1,63 @@
+/* ============================================
+   LAYOUT PRINCIPAL BANDLAB
+   ============================================ */
+.daw-bl {
+  height: 100vh;
+  display: grid;
+  /* Filas: topbar + toolbar(2 filas ≈ 58px) + body + bottombar */
+  grid-template-rows: var(--topbar-height) 58px 1fr 40px;
+  background: var(--bg-app);
+  color: var(--text-primary);
+}
+
+.daw-bl-body {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) 1fr;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/*
+  ✅ FIX crítico: min-width: 0 en los hijos del grid.
+
+  Sin esto, los grid items tienen `min-width: auto` (default),
+  lo cual hace que un `1fr` no colapse correctamente cuando la
+  otra columna es 0px o cuando el contenido interno "empuja".
+
+  Esto también evita que el <Workspace> se desborde
+  horizontalmente cuando hay muchos clips (permite scroll interno).
+*/
+.daw-bl-body > * {
+  min-width: 0;
+  min-height: 0;
+}
+
+/*
+  ✅ FIX: cuando el Sidebar devuelve null (sin assets),
+  el <Workspace> queda como único hijo del grid.
+
+  Por defecto, se posicionaría en la columna 1 (el sidebar) que
+  tiene 0px, dejando la columna 2 (1fr) vacía y el Workspace invisible.
+
+  Con :only-child forzamos que ocupe ambas columnas.
+*/
+.daw-bl-body > :only-child {
+  grid-column: 1 / -1;
+}
+
+/* ============================================
+   LAYOUT CON MIXER INTEGRADO
+   ============================================ */
+.daw-bl.with-mixer {
+  grid-template-rows: var(--topbar-height) 58px 1fr 40px 300px;
+}
+
+/* ============================================
+   MIXER WRAP
+   ============================================ */
+.daw-mixer-wrap {
+  overflow: hidden;
+  border-top: 2px solid #1f1f1f;
+  background: var(--mixer-bg, #0a0a0a);
+  min-height: 0;
+}

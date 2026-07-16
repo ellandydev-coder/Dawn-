@@ -1,0 +1,60 @@
+/* ============================================================
+   TOOLTIP — Componente genérico reutilizable
+   Estilo dark, minimalista, portal-based
+   ============================================================ */
+
+.tooltip {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+
+  /* Tipografía */
+  font-family: var(--font-mono, 'JetBrains Mono', 'Fira Code', monospace);
+  font-size: 11px;
+  line-height: 1.3;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+
+  /* Colores y fondo */
+  color: #e8e8e8;
+  background: linear-gradient(180deg, #2a2a2e 0%, #1e1e21 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+
+  /* Espaciado */
+  padding: 4px 8px;
+
+  /* Sombra */
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.5),
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+
+  /* Animación de entrada */
+  animation: tooltip-fade-in 0.12s ease-out;
+
+  /* Rendering */
+  user-select: none;
+  will-change: transform, opacity;
+}
+
+@keyframes tooltip-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ══════════════════════════════════
+   ACCESIBILIDAD — reduce motion
+   ══════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .tooltip {
+    animation: none;
+  }
+}

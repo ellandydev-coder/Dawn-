@@ -1,0 +1,328 @@
+/* ============================================================
+   FX BROWSER MODAL — Estilo REAPER
+   ============================================================ */
+
+.fx-browser-modal .modal-container {
+  min-width: 900px;
+  min-height: 560px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.fx-browser-modal .modal-body {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ══════════════════════════════════
+   FILTRO SUPERIOR
+   ══════════════════════════════════ */
+
+.fx-browser-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border, #2a2a2a);
+  background: var(--bg-panel-2, #1f1f1f);
+  flex-shrink: 0;
+}
+
+.fx-browser-filter-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary, #b0b0b0);
+  flex-shrink: 0;
+}
+
+.fx-browser-filter-input {
+  flex: 1;
+  height: 26px;
+  padding: 0 10px;
+  background: var(--bg-input, #0f0f0f);
+  border: 1px solid var(--border-strong, #3a3a3a);
+  border-radius: 3px;
+  color: #fff;
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+
+.fx-browser-filter-input:focus {
+  border-color: var(--accent, #7a8cff);
+  box-shadow: 0 0 0 2px rgba(122, 140, 255, 0.25);
+}
+
+.fx-browser-filter-input::placeholder {
+  color: var(--text-muted, #666);
+}
+
+.fx-browser-filter-clear {
+  height: 26px;
+  padding: 0 12px;
+  background: linear-gradient(180deg, #3a3a3a, #2a2a2a);
+  border: 1px solid var(--border-strong, #1a1a1a);
+  border-radius: 3px;
+  color: #d0d0d0;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.12s, color 0.12s;
+}
+
+.fx-browser-filter-clear:hover:not(:disabled) {
+  background: linear-gradient(180deg, #4a4a4a, #3a3a3a);
+  color: #fff;
+}
+
+.fx-browser-filter-clear:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ══════════════════════════════════
+   CUERPO: SIDEBAR + LIST
+   ══════════════════════════════════ */
+
+.fx-browser-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ─── Sidebar ─────────────────────────────────────── */
+
+.fx-browser-sidebar {
+  width: 200px;
+  min-width: 200px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--bg-panel, #1a1a1a);
+  border-right: 1px solid var(--border, #2a2a2a);
+  padding: 8px 0;
+  flex-shrink: 0;
+}
+
+.fx-browser-sidebar-section {
+  margin-bottom: 12px;
+}
+
+.fx-browser-sidebar-section-title {
+  padding: 4px 12px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted, #666);
+}
+
+.fx-browser-sidebar-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.fx-browser-sidebar-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px 5px 20px;
+  background: transparent;
+  border: none;
+  color: var(--text-primary, #d0d0d0);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.08s, color 0.08s;
+  font-family: inherit;
+}
+
+.fx-browser-sidebar-item:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+}
+
+.fx-browser-sidebar-item.is-selected {
+  background: var(--accent, #7a8cff);
+  color: #fff;
+}
+
+.fx-browser-sidebar-item.is-selected:hover {
+  background: var(--accent-hover, #8a9cff);
+}
+
+.fx-browser-sidebar-item.is-disabled,
+.fx-browser-sidebar-item:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.fx-browser-sidebar-item.is-empty {
+  opacity: 0.5;
+}
+
+.fx-browser-sidebar-item-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fx-browser-sidebar-item-count {
+  font-size: 10px;
+  color: var(--text-muted, #888);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.fx-browser-sidebar-item.is-selected .fx-browser-sidebar-item-count {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* ─── Lista de plugins ────────────────────────────── */
+
+.fx-browser-list {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--bg-input, #0f0f0f);
+  padding: 4px 0;
+  min-width: 0;
+}
+
+.fx-browser-list-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  color: var(--text-primary, #d0d0d0);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.08s;
+  user-select: none;
+  outline: none;
+}
+
+.fx-browser-list-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.fx-browser-list-row:focus-visible {
+  background: rgba(122, 140, 255, 0.12);
+  outline: 1px solid var(--accent, #7a8cff);
+  outline-offset: -1px;
+}
+
+.fx-browser-list-row.is-selected {
+  background: var(--accent, #7a8cff);
+  color: #fff;
+}
+
+.fx-browser-list-row.is-selected:hover {
+  background: var(--accent-hover, #8a9cff);
+}
+
+.fx-browser-list-row.is-unavailable {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fx-browser-list-row-format {
+  min-width: 56px;
+  padding: 1px 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  text-align: center;
+  color: var(--text-secondary, #a0a0a0);
+  flex-shrink: 0;
+}
+
+.fx-browser-list-row.is-selected .fx-browser-list-row-format {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.fx-browser-list-row-name {
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.fx-browser-list-row-vendor {
+  color: var(--text-muted, #888);
+  flex-shrink: 0;
+}
+
+.fx-browser-list-row.is-selected .fx-browser-list-row-vendor {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.fx-browser-list-row-badge {
+  margin-left: auto;
+  padding: 1px 6px;
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbc02d;
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  border-radius: 2px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ─── Estado vacío de la lista ────────────────────── */
+
+.fx-browser-list.is-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fx-browser-list-empty {
+  text-align: center;
+  color: var(--text-muted, #666);
+  padding: 40px 20px;
+}
+
+.fx-browser-list-empty-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.fx-browser-list-empty-text {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.fx-browser-list-empty-hint {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+/* ══════════════════════════════════
+   REDUCE MOTION
+   ══════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-browser-sidebar-item,
+  .fx-browser-list-row,
+  .fx-browser-filter-input,
+  .fx-browser-filter-clear {
+    transition: none;
+  }
+}

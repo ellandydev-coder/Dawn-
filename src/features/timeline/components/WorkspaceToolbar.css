@@ -1,0 +1,87 @@
+/* ============================================================
+   WORKSPACE TOOLBAR (estilo REAPER — 2 filas)
+   ============================================================ */
+.ws-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 3px 6px;
+  background: #3a3a3a;
+  border-bottom: 1px solid #1e1e1e;
+  border-top: 1px solid #2a2a2a;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.ws-toolbar-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 2px;
+  height: 24px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.ws-toolbar-row::-webkit-scrollbar {
+  height: 3px;
+}
+.ws-toolbar-row::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 2px;
+}
+
+.ws-tb-sep {
+  width: 1px;
+  height: 16px;
+  background: #1e1e1e;
+  margin: 0 4px;
+  box-shadow: 1px 0 0 #4a4a4a;
+  flex-shrink: 0;
+}
+
+.ws-tb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: transparent;
+  color: #c8c8c8;
+  cursor: pointer;
+  transition: background 0.08s ease, border-color 0.08s ease;
+  flex-shrink: 0;
+}
+
+.ws-tb-btn:hover {
+  background: #4a4a4a;
+  border-color: #5a5a5a;
+  color: #e8e8e8;
+}
+
+.ws-tb-btn:active {
+  background: #2e2e2e;
+  border-color: #1e1e1e;
+}
+
+.ws-tb-btn.is-active {
+  background: #5a8fc7;
+  border-color: #4a7fb7;
+  color: #ffffff;
+}
+
+.ws-tb-btn.is-active:hover {
+  background: #6a9fd7;
+}
+
+/* Iconos SVG estilo REAPER */
+.ws-tb-btn svg {
+  stroke-width: 2;
+  color: inherit;
+}
+.ws-tb-btn.is-active svg {
+  color: #ffffff;
+}

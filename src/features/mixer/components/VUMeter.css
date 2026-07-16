@@ -1,0 +1,175 @@
+/* ============================================================
+   VU METER — Vertical con LEDs (v10/10)
+   ============================================================ */
+
+.vumeter-container {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: center;
+  user-select: none;
+  padding: 2px 0;
+  box-sizing: border-box;
+}
+
+/* ══════════════════════════════════
+   CLIP INDICATOR
+   ══════════════════════════════════ */
+.vumeter-clip {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2a1010;
+  border: 1px solid #1a0808;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.8);
+  flex-shrink: 0;
+  transition: background 0.15s, box-shadow 0.15s, border-color 0.15s;
+  padding: 0;
+}
+
+.vumeter-clip.is-clipping {
+  background: #ff2020;
+  border-color: #ff6060;
+  box-shadow:
+    0 0 8px rgba(255, 32, 32, 0.8),
+    inset 0 1px 2px rgba(255, 255, 255, 0.3);
+  animation: vumeter-clip-pulse 0.8s ease-in-out infinite;
+}
+
+@keyframes vumeter-clip-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.7; }
+}
+
+.vumeter-clip.is-interactive {
+  cursor: pointer;
+}
+
+.vumeter-clip.is-interactive:hover {
+  border-color: #ff8080;
+  transform: scale(1.15);
+}
+
+.vumeter-clip:focus-visible {
+  outline: 2px solid #7a8cff;
+  outline-offset: 2px;
+}
+
+/* ══════════════════════════════════
+   TRACK
+   ══════════════════════════════════ */
+.vumeter-track {
+  flex: 1;
+  width: 100%;
+  background: #0a0a0d;
+  border: 1px solid #1a1a20;
+  border-radius: 2px;
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.8),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.03);
+  position: relative;
+  overflow: hidden;
+  padding: 1px;
+  min-height: 0;
+}
+
+/* ══════════════════════════════════
+   SEGMENTOS
+   ══════════════════════════════════ */
+.vumeter-segments {
+  height: 100%;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 1px;
+}
+
+.vumeter-segment {
+  flex: 1;
+  min-height: 2px;
+  background: #14141a;
+  border-radius: 1px;
+  transition: background 20ms linear, box-shadow 20ms linear;
+  will-change: background;
+}
+
+.vumeter-segment.active-green {
+  background: #22c55e;
+  box-shadow:
+    0 0 3px rgba(34, 197, 94, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.vumeter-segment.active-yellow {
+  background: #facc15;
+  box-shadow:
+    0 0 3px rgba(250, 204, 21, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.vumeter-segment.active-red {
+  background: #ef4444;
+  box-shadow:
+    0 0 4px rgba(239, 68, 68, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* ══════════════════════════════════
+   PEAK HOLD
+   ══════════════════════════════════ */
+.vumeter-peakhold {
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  height: 2px;
+  background: #ffffff;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.6);
+  transition: bottom 60ms linear;
+  pointer-events: none;
+  z-index: 2;
+  will-change: bottom;
+}
+
+/* ══════════════════════════════════
+   dB LABEL
+   ══════════════════════════════════ */
+.vumeter-db-label {
+  font-size: 8px;
+  font-weight: 700;
+  color: #a0a0a5;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  text-align: center;
+  min-width: 30px;
+  padding: 1px 3px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 2px;
+  letter-spacing: 0.3px;
+}
+
+/* ══════════════════════════════════
+   ESTÉREO
+   ══════════════════════════════════ */
+.vumeter-stereo {
+  display: flex;
+  flex-direction: row;
+  gap: 3px;
+  align-items: stretch;
+}
+
+/* ══════════════════════════════════
+   ACCESIBILIDAD — reduce motion
+   ══════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .vumeter-clip,
+  .vumeter-segment,
+  .vumeter-peakhold {
+    transition: none;
+  }
+
+  .vumeter-clip.is-clipping {
+    animation: none;
+  }
+
+  .vumeter-clip.is-interactive:hover {
+    transform: none;
+  }
+}

@@ -1,0 +1,94 @@
+/* ============================================
+   WEB DAW — Variables CSS globales
+   Única fuente de verdad para colores, tamaños,
+   sombras, animaciones y layout.
+   ============================================ */
+
+:root {
+  /* -------- BACKGROUNDS -------- */
+  --bg-app: #0a0a0a;
+  --bg-panel: #0f0f0f;
+  --bg-panel-2: #141414;
+  --bg-elev: #1a1a1a;
+  --bg-hover: #1f1f1f;
+  --bg-active: #262626;
+
+  /* -------- BORDERS -------- */
+  --border: #1a1a1a;
+  --border-strong: #2a2a2a;
+
+  /* -------- TEXT -------- */
+  --text-primary: #ffffff;
+  --text-secondary: #a0a0a0;
+  --text-muted: #6a6a6a;
+  --text-dim: #4a4a4a;
+
+  /* -------- ACCENT -------- */
+  --accent: #6366f1;
+  --accent-hover: #7c7ff5;
+  --accent-glow: rgba(99, 102, 241, 0.4);
+
+  /* -------- STATE COLORS -------- */
+  --success: #22c55e;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --recording: #ff2e5f;
+
+  /* -------- TRACK COLORS (tipo FL Studio) -------- */
+  --track-1: #ff6b6b;
+  --track-2: #4ecdc4;
+  --track-3: #ffe66d;
+  --track-4: #a78bfa;
+  --track-5: #60a5fa;
+  --track-6: #f472b6;
+  --track-7: #fb923c;
+  --track-8: #34d399;
+
+  /* -------- SHADOWS -------- */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px var(--accent-glow);
+
+  /* -------- LAYOUT -------- */
+  --sidebar-width: 200px;
+  --header-width: 140px;
+  --topbar-height: 100px;
+  --statusbar-height: 28px;
+  --ruler-height: 34px;
+
+  /* -------- BRANDING -------- */
+  /* Tamaño visual del logo en la topbar (altura).
+     El width es automático para respetar el aspect ratio.
+     Cambia este valor si quieres el logo más grande/pequeño. */
+  --logo-size: 40px;
+
+  /* -------- RADIUS -------- */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+
+  /* -------- MIXER (REAPER STYLE) -------- */
+  --mixer-bg: #0a0a0a;
+  --mixer-strip-bg: #1a1a1a;
+  --mixer-strip-bg-hover: #202020;
+  --mixer-strip-border: #2a2a2a;
+  --mixer-strip-border-active: #4a4a4a;
+  --mixer-strip-width: 90px;
+  --mixer-height: 320px;
+  --mixer-header-height: 26px;
+
+  /* Botones (mixer) */
+  --btn-bg: #2a2a2a;
+  --btn-bg-hover: #3a3a3a;
+  --btn-text: #a0a0a0;
+  --btn-mute-active: #dc2626;
+  --btn-solo-active: #eab308;
+  --btn-rec-active: #dc2626;
+  --btn-fx-active: #22c55e;
+
+  /* Meters */
+  --meter-off: #1a1a1a;
+  --meter-green: #22c55e;
+  --meter-yellow: #facc15;
+  --meter-red: #ef4444;
+}

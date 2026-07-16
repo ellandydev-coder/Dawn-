@@ -1,0 +1,77 @@
+/* src/features/preferences/components/panels/VstPanel.css */
+
+/* ═══════════════════════════════════════════════════════════════
+   🎛️ VST PANEL — Estilos específicos
+   ---------------------------------------------------------------
+   Los controles base (checkbox, select, textfield, section) están
+   estilizados en controls.css. Aquí solo definimos:
+     • Filas de acción (Re-scan + checkbox + Edit paths)
+     • Filas inline (Generic UI + Knob mode)
+     • Botones de acción del panel
+     • Nota informativa azul (REAPER-style)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Fila de acciones (botones + checkboxes en línea) ──────── */
+
+.vst-panel__actions-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.vst-panel__inline-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* Spacer flexible para empujar contenido a los lados */
+.vst-panel__spacer {
+  flex: 1;
+  min-width: 12px;
+}
+
+/* ── Botón de acción (Re-scan, Edit paths) ─────────────────── */
+
+.vst-panel__btn {
+  background: #222232;
+  border: 1px solid #3a3a48;
+  color: #dcdce6;
+  font-size: 11px;
+  font-family: inherit;
+  padding: 4px 12px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+  white-space: nowrap;
+}
+
+.vst-panel__btn:hover {
+  background: #2d2d40;
+  border-color: #5a5a70;
+}
+
+.vst-panel__btn:active {
+  background: #1a1a26;
+}
+
+.vst-panel__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── Nota informativa (estilo REAPER blue) ─────────────────── */
+
+.vst-panel__note {
+  font-size: 11px;
+  color: #6aa9ff;
+  line-height: 1.5;
+  margin: 6px 0 0 0;
+  padding: 6px 10px;
+  background: rgba(106, 169, 255, 0.06);
+  border-left: 2px solid rgba(106, 169, 255, 0.4);
+  border-radius: 2px;
+}

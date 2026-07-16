@@ -1,0 +1,276 @@
+/* ==================================================
+   ✨ WORKSPACE (headers y timeline LADO A LADO)
+   ================================================== */
+
+.ws-bl-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+.ws-bl-wrapper > .ws-bl {
+  flex: 1;
+  min-height: 0;
+}
+
+.ws-bl {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-app);
+}
+
+/* ==================================================
+   FILA 1: [add-track spacer] + [ruler]
+   ================================================== */
+.ws-top-row {
+  display: flex;
+  height: var(--ruler-height);
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-app);
+}
+
+.ws-add-track-wrap {
+  width: var(--header-width);
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border-right: 1px solid var(--border);
+  background: var(--bg-app);
+  height: var(--ruler-height);
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.ws-ruler-scroll-header {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.ws-ruler {
+  position: relative;
+  height: var(--ruler-height);
+  background: var(--bg-app);
+  cursor: text;
+}
+
+.ws-ruler:hover {
+  background: rgba(74, 222, 128, 0.03);
+}
+
+.ws-bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid var(--border-strong);
+}
+
+.ws-bar-num {
+  position: absolute;
+  left: 6px;
+  top: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.ws-beat {
+  position: absolute;
+  top: 22px;
+  bottom: 0;
+  width: 1px;
+  background: var(--border);
+}
+
+/* ==================================================
+   FILA 2: [headers-col] + [lanes-scroll]
+   ================================================== */
+.ws-main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.ws-headers-col {
+  position: relative;
+  width: var(--header-width);
+  flex-shrink: 0;
+  background: #333333;
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  overflow-x: hidden;
+  transition: background 0.15s ease;
+}
+
+.ws-lanes-scroll {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  min-width: 0;
+}
+
+.ws-body {
+  position: relative;
+  min-height: 100%;
+}
+
+/* Cursor global durante drag interno de clip */
+.ws-body.is-dragging-clip,
+.ws-body.is-dragging-clip * {
+  cursor: grabbing !important;
+}
+
+/* Cursor global durante drag externo de asset */
+.ws-body.is-dragging-asset,
+.ws-body.is-dragging-asset * {
+  cursor: copy !important;
+}
+
+/* ==================================================
+   HEADERS COLUMN — Estados de drop de asset
+   -------------------------------------------------
+   Cuando el usuario arrastra un asset de audio sobre
+   la columna de headers, mostramos feedback visual:
+     • .ws-headers-col.is-drop-active
+         → columna entera resaltada suavemente
+     • .ws-header-wrap.is-drop-target
+         → highlight del TrackHeader target
+           (drop añadirá clip a esa pista)
+     • .rpr-add-track-slot.is-drop-target
+         → highlight del "+"
+           (drop creará pista nueva)
+   ================================================== */
+
+/* Wrapper de cada TrackHeader — usado para posicionar
+   el overlay de drop target sin romper el layout interno */
+.ws-header-wrap {
+  position: relative;
+}
+
+.ws-headers-col.is-drop-active {
+  background: #383838;
+}
+
+/* Highlight del TrackHeader target (drop → añade clip a esa pista) */
+.ws-header-wrap.is-drop-target::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border: 2px solid var(--accent, #7a8cff);
+  border-radius: 4px;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.35),
+    0 0 14px rgba(122, 140, 255, 0.5);
+  pointer-events: none;
+  z-index: 20;
+  animation: ws-header-drop-pulse 1.2s ease-in-out infinite;
+}
+
+/* Highlight del slot "+" cuando el drop creará una pista nueva */
+.rpr-add-track-slot.is-drop-target {
+  background: rgba(122, 140, 255, 0.12);
+  outline: 2px dashed var(--accent, #7a8cff);
+  outline-offset: -4px;
+}
+
+.rpr-add-track-slot.is-drop-target .rpr-add-circle {
+  background: var(--accent, #7a8cff);
+  color: white;
+  border-color: var(--accent, #7a8cff);
+  transform: scale(1.15);
+  box-shadow: 0 0 16px var(--accent-glow, rgba(122, 140, 255, 0.6));
+}
+
+@keyframes ws-header-drop-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.35),
+      0 0 14px rgba(122, 140, 255, 0.5);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.35),
+      0 0 22px rgba(122, 140, 255, 0.85);
+  }
+}
+
+/* ==================================================
+   LANE (fila donde viven los clips de una pista)
+   ================================================== */
+.ws-lane {
+  position: relative;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-app);
+  overflow: hidden;
+}
+
+.ws-lane:nth-child(even) {
+  background: #0d0d0d;
+}
+
+/* Grid de fondo con divisiones de beat y bar */
+.ws-lane::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent 29px,
+      rgba(255, 255, 255, 0.02) 29px,
+      rgba(255, 255, 255, 0.02) 30px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent 119px,
+      rgba(255, 255, 255, 0.04) 119px,
+      rgba(255, 255, 255, 0.04) 120px
+    );
+  pointer-events: none;
+}
+
+/* ==================================================
+   LANE — Estado drag over (asset arrastrado sobre esta lane)
+   ================================================== */
+.ws-lane.is-drag-over {
+  background: rgba(122, 140, 255, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(122, 140, 255, 0.35);
+}
+
+.ws-lane.is-drag-over:nth-child(even) {
+  background: rgba(122, 140, 255, 0.08);
+}
+
+/* Muted: lane ligeramente atenuada */
+.ws-lane.is-muted {
+  opacity: 0.75;
+}
+
+/* ==================================================
+   Ocultar headers viejos (legacy)
+   ================================================== */
+.ws-track-head,
+.automix-track {
+  display: none !important;
+}
+
+/* ==================================================
+   REDUCE MOTION
+   ================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .ws-headers-col,
+  .ws-headers-col.is-drop-active,
+  .ws-header-wrap.is-drop-target::after,
+  .rpr-add-track-slot.is-drop-target,
+  .rpr-add-track-slot.is-drop-target .rpr-add-circle {
+    transition: none;
+    animation: none;
+    transform: none;
+  }
+}

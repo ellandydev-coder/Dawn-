@@ -1,0 +1,16 @@
+/* ============================================
+   UTILITIES + OCULTAR LAYOUTS VIEJOS
+   ============================================ */
+.tracks-panel,
+.timeline,
+.daw-body,
+.daw-main,
+.workspace,
+.track-headers,
+.timeline-area,
+.statusbar,
+.ws-top,
+.ws-ruler-scroll,
+.bottom-bar {
+  display: none !important;
+}

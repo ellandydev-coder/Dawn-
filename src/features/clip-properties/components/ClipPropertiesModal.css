@@ -1,0 +1,489 @@
+/* ==================================================
+   🎚️ CLIP PROPERTIES MODAL — Estilo REAPER
+   --------------------------------------------------
+   Diseño de alta densidad inspirado en la ventana
+   "Media Item Properties" de REAPER: campos compactos,
+   labels a la izquierda, valores tabulares en fuente
+   monoespaciada, agrupación por secciones.
+
+   Hereda estilos base de Modal.css
+   (backdrop, container, header, footer, botones).
+   ================================================== */
+
+/* ==================================================
+   ROOT
+   ================================================== */
+.clip-props {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--text-primary, #ffffff);
+}
+
+/* ==================================================
+   SECCIÓN
+   -------------------------------------------------
+   Cada grupo de campos relacionados (Position/Length,
+   Take properties, Media source).
+   ================================================== */
+.clip-props-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--bg-panel-2, #141414);
+  border: 1px solid var(--border, #1a1a1a);
+  border-radius: var(--radius-sm, 4px);
+}
+
+.clip-props-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary, #a0a0a0);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 2px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border, #1a1a1a);
+}
+
+.clip-props-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  background: var(--bg-elev, #1a1a1a);
+  border: 1px solid var(--border-strong, #2a2a2a);
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent, #6366f1);
+  text-transform: none;
+  letter-spacing: 0.3px;
+}
+
+/* ==================================================
+   GRID DE CAMPOS
+   -------------------------------------------------
+   Layout de 2 o 3 columnas. En pantallas pequeñas
+   colapsa a 1 columna.
+   ================================================== */
+.clip-props-grid {
+  display: grid;
+  gap: 8px 16px;
+}
+
+.clip-props-grid-2col {
+  grid-template-columns: 1fr 1fr;
+}
+
+.clip-props-grid-3col {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+/* ==================================================
+   CAMPO INDIVIDUAL (label + input)
+   -------------------------------------------------
+   Label a la izquierda con ancho fijo, input a la
+   derecha ocupando el resto (estilo REAPER).
+
+   Ancho de label: 140px — suficiente para acomodar
+   los labels más largos ("Start in source:", "Sample
+   rate:", etc.) sin recortes ni desalineaciones.
+   ================================================== */
+.clip-props-field {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+}
+
+.clip-props-field-full {
+  grid-column: 1 / -1;
+}
+
+.clip-props-field label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary, #a0a0a0);
+  white-space: nowrap;
+  text-align: left;
+  user-select: none;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ==================================================
+   INPUT
+   ================================================== */
+.clip-props-input {
+  width: 100%;
+  min-width: 0;
+  padding: 4px 8px;
+  background: var(--bg-app, #0a0a0a);
+  border: 1px solid var(--border-strong, #2a2a2a);
+  border-radius: var(--radius-sm, 4px);
+  color: var(--text-primary, #ffffff);
+  font-size: 12px;
+  font-family: inherit;
+  line-height: 1.4;
+  outline: none;
+  transition:
+    border-color 0.1s ease,
+    background 0.1s ease;
+  box-sizing: border-box;
+  height: 26px;
+}
+
+.clip-props-input.mono {
+  font-family:
+    'JetBrains Mono', 'Fira Code', ui-monospace, 'SF Mono',
+    Consolas, 'Courier New', monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.2px;
+}
+
+.clip-props-input:hover:not(:disabled):not(:read-only) {
+  border-color: var(--text-dim, #4a4a4a);
+}
+
+.clip-props-input:focus {
+  border-color: var(--accent, #6366f1);
+  background: var(--bg-panel, #0f0f0f);
+  box-shadow: 0 0 0 1px var(--accent, #6366f1);
+}
+
+.clip-props-input:read-only,
+.clip-props-input:disabled {
+  color: var(--text-muted, #6a6a6a);
+  background: var(--bg-panel, #0f0f0f);
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+
+/* Ocultar spinner en inputs numéricos (Chrome/Safari) */
+.clip-props-input::-webkit-inner-spin-button,
+.clip-props-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+.clip-props-input[type='number'] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+/* ==================================================
+   INLINE (slider + valor a la derecha)
+   -------------------------------------------------
+   Usado para el slider de volumen: la barra ocupa
+   el resto y el valor numérico va a la derecha.
+   ================================================== */
+.clip-props-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.clip-props-value {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary, #ffffff);
+  min-width: 56px;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ==================================================
+   SLIDER (volumen)
+   -------------------------------------------------
+   Slider horizontal custom, look consistente con
+   los faders del mixer.
+   ================================================== */
+.clip-props-slider {
+  flex: 1;
+  min-width: 0;
+  height: 4px;
+  background: var(--border-strong, #2a2a2a);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Thumb — WebKit */
+.clip-props-slider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  background: var(--accent, #6366f1);
+  border: 2px solid var(--bg-panel, #0f0f0f);
+  border-radius: 50%;
+  cursor: grab;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  transition: transform 0.1s ease, background 0.1s ease;
+}
+
+.clip-props-slider::-webkit-slider-thumb:hover {
+  background: var(--accent-hover, #7c7ff5);
+  transform: scale(1.15);
+}
+
+.clip-props-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.05);
+}
+
+/* Thumb — Firefox */
+.clip-props-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: var(--accent, #6366f1);
+  border: 2px solid var(--bg-panel, #0f0f0f);
+  border-radius: 50%;
+  cursor: grab;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  transition: transform 0.1s ease, background 0.1s ease;
+}
+
+.clip-props-slider::-moz-range-thumb:hover {
+  background: var(--accent-hover, #7c7ff5);
+  transform: scale(1.15);
+}
+
+.clip-props-slider::-moz-range-thumb:active {
+  cursor: grabbing;
+}
+
+/* Track — Firefox (WebKit usa el background del input) */
+.clip-props-slider::-moz-range-track {
+  height: 4px;
+  background: var(--border-strong, #2a2a2a);
+  border-radius: 2px;
+}
+
+/* Focus ring */
+.clip-props-slider:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.4),
+    0 0 0 3px var(--accent-glow, rgba(99, 102, 241, 0.4));
+}
+
+.clip-props-slider:focus-visible::-moz-range-thumb {
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.4),
+    0 0 0 3px var(--accent-glow, rgba(99, 102, 241, 0.4));
+}
+
+/* ==================================================
+   ESTADO VACÍO (media source sin asset)
+   -------------------------------------------------
+   Mostrado dentro de la sección "Take media source"
+   cuando el clip existe pero no tiene asset asociado
+   (ej: clips MIDI o clips vacíos).
+   ================================================== */
+.clip-props-empty {
+  padding: 16px;
+  text-align: center;
+  font-size: 11px;
+  font-style: italic;
+  color: var(--text-muted, #6a6a6a);
+  background: var(--bg-app, #0a0a0a);
+  border: 1px dashed var(--border-strong, #2a2a2a);
+  border-radius: var(--radius-sm, 4px);
+}
+
+/* ==================================================
+   ESTADO SIN SELECCIÓN — Modal abierto pero sin clip
+   -------------------------------------------------
+   Se muestra en TODO el body del modal cuando el
+   usuario deseleccionó (o borró) el clip que estaba
+   editando. Diferente de .clip-props-empty porque
+   ocupa el modal entero, no solo una sección.
+
+   Diseño: icono grande centrado con animación de
+   flotación sutil, título claro, hint con atajos
+   visualizados con <kbd>.
+   ================================================== */
+.clip-props-no-selection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px 24px;
+  min-height: 240px;
+  text-align: center;
+  color: var(--text-secondary, #a0a0a0);
+  user-select: none;
+}
+
+.clip-props-no-selection-icon {
+  font-size: 56px;
+  line-height: 1;
+  color: var(--text-dim, #4a4a4a);
+  opacity: 0.7;
+  margin-bottom: 4px;
+  animation: clip-props-no-selection-float 3s ease-in-out infinite;
+}
+
+.clip-props-no-selection-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary, #ffffff);
+  letter-spacing: 0.3px;
+}
+
+.clip-props-no-selection-hint {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted, #6a6a6a);
+  line-height: 1.6;
+  max-width: 320px;
+}
+
+.clip-props-no-selection-hint kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  background: var(--bg-elev, #1a1a1a);
+  border: 1px solid var(--border-strong, #2a2a2a);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary, #ffffff);
+  line-height: 1;
+}
+
+@keyframes clip-props-no-selection-float {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateY(-4px);
+    opacity: 0.9;
+  }
+}
+
+/* ==================================================
+   ERROR EN FOOTER
+   -------------------------------------------------
+   Mensaje de validación mostrado a la izquierda de
+   los botones del footer.
+   ================================================== */
+.clip-props-error {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--danger, #ef4444);
+  padding: 4px 8px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-sm, 4px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  animation: clip-props-error-in 0.15s ease-out;
+}
+
+@keyframes clip-props-error-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==================================================
+   RESPONSIVE
+   -------------------------------------------------
+   En pantallas < 720px, todos los grids colapsan
+   a 1 columna. Los labels quedan encima del input.
+   ================================================== */
+@media (max-width: 720px) {
+  .clip-props-grid-2col,
+  .clip-props-grid-3col {
+    grid-template-columns: 1fr;
+  }
+
+  .clip-props-field {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    min-height: 0;
+  }
+
+  .clip-props-field label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .clip-props-error {
+    white-space: normal;
+  }
+
+  .clip-props-no-selection {
+    padding: 32px 16px;
+    min-height: 180px;
+  }
+
+  .clip-props-no-selection-icon {
+    font-size: 44px;
+  }
+}
+
+/* ==================================================
+   REDUCE MOTION
+   ================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .clip-props-slider::-webkit-slider-thumb,
+  .clip-props-slider::-moz-range-thumb,
+  .clip-props-input {
+    transition: none;
+  }
+
+  .clip-props-slider::-webkit-slider-thumb:hover,
+  .clip-props-slider::-moz-range-thumb:hover {
+    transform: none;
+  }
+
+  .clip-props-error,
+  .clip-props-no-selection-icon {
+    animation: none;
+  }
+}
+
+/* ==================================================
+   HIGH CONTRAST MODE
+   ================================================== */
+@media (prefers-contrast: more) {
+  .clip-props-input,
+  .clip-props-section {
+    border-width: 2px;
+  }
+
+  .clip-props-input:focus {
+    box-shadow: 0 0 0 2px var(--accent, #6366f1);
+  }
+
+  .clip-props-no-selection-hint kbd {
+    border-width: 2px;
+  }
+}

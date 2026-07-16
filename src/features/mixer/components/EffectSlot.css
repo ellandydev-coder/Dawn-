@@ -1,0 +1,234 @@
+/* ============================================================
+   EFFECT SLOT — Estilo REAPER FX chain (v10/10)
+   ============================================================ */
+
+.fx-slot {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 18px;
+  padding: 0 4px;
+  background: var(--bg-elev);
+  border: 1px solid var(--mixer-strip-border);
+  border-radius: 3px;
+  font-size: 9px;
+  color: var(--text-secondary);
+  transition:
+    background 0.12s,
+    border-color 0.12s,
+    box-shadow 0.12s,
+    opacity 0.12s;
+  cursor: pointer;
+  user-select: none;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.fx-slot:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+}
+
+/* ══════════════════════════════════
+   ESTADOS
+   ══════════════════════════════════ */
+
+/* Slot vacío */
+.fx-slot.is-empty {
+  opacity: 0.6;
+  font-style: italic;
+  border-style: dashed;
+  border-color: rgba(122, 140, 255, 0.2);
+}
+
+.fx-slot.is-empty:hover {
+  opacity: 1;
+  border-color: var(--accent);
+  background: rgba(122, 140, 255, 0.08);
+}
+
+/* Slot en bypass */
+.fx-slot.is-bypassed {
+  opacity: 0.5;
+}
+
+.fx-slot.is-bypassed .fx-slot-name {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+/* ✅ NUEVO: Slot activo (UI abierta / seleccionado) */
+.fx-slot.is-active {
+  background: rgba(122, 140, 255, 0.12);
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 1px var(--accent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.fx-slot.is-active .fx-slot-name {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ✅ NUEVO: Slot deshabilitado */
+.fx-slot.is-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ✅ NUEVO: Focus visible (accesibilidad) */
+.fx-slot:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  z-index: 1;
+}
+
+/* ══════════════════════════════════
+   BOTÓN POWER (bypass)
+   ══════════════════════════════════ */
+.fx-slot-power {
+  width: 10px;
+  height: 10px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.1s;
+}
+
+.fx-slot-power:hover {
+  transform: scale(1.2);
+}
+
+.fx-slot-power:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: 50%;
+}
+
+.fx-slot-power:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.fx-slot-led {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.fx-slot-power.on .fx-slot-led {
+  background: var(--btn-fx-active, #22c55e);
+  box-shadow: 0 0 4px var(--btn-fx-active, #22c55e);
+}
+
+.fx-slot-power.off .fx-slot-led {
+  background: #555;
+  box-shadow: none;
+}
+
+/* ══════════════════════════════════
+   NOMBRE DEL EFECTO
+   ══════════════════════════════════ */
+.fx-slot-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0; /* fix flexbox ellipsis */
+  pointer-events: none; /* que no interfiera con click del slot */
+}
+
+/* ✅ NUEVO: Placeholder para slots vacíos */
+.fx-slot-placeholder {
+  color: var(--text-dim, #666);
+  font-style: italic;
+  opacity: 0.7;
+  transition: color 0.12s, opacity 0.12s;
+}
+
+.fx-slot.is-empty:hover .fx-slot-placeholder {
+  color: var(--accent);
+  opacity: 1;
+}
+
+/* ══════════════════════════════════
+   BOTÓN REMOVE
+   ══════════════════════════════════ */
+.fx-slot-remove {
+  width: 12px;
+  height: 12px;
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.12s, background 0.12s;
+}
+
+.fx-slot-remove:hover {
+  color: #fff;
+  background: var(--danger, #ef4444);
+}
+
+.fx-slot-remove:focus-visible {
+  outline: 1px solid var(--danger, #ef4444);
+  outline-offset: 1px;
+}
+
+.fx-slot-remove:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+/* ══════════════════════════════════
+   ACCESIBILIDAD — reduce motion
+   ══════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .fx-slot,
+  .fx-slot-power,
+  .fx-slot-led,
+  .fx-slot-remove,
+  .fx-slot-placeholder {
+    transition: none;
+  }
+
+  .fx-slot-power:hover {
+    transform: none;
+  }
+}
+
+/* ══════════════════════════════════
+   DRAG & DROP (preparado)
+   ══════════════════════════════════ */
+.fx-slot[draggable="true"] {
+  cursor: grab;
+}
+
+.fx-slot[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.fx-slot.is-dragging {
+  opacity: 0.5;
+  transform: scale(0.98);
+}
+
+.fx-slot.is-drop-target {
+  border-color: var(--accent);
+  background: rgba(122, 140, 255, 0.15);
+  box-shadow: 0 0 0 2px var(--accent);
+}

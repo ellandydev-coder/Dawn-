@@ -1,0 +1,61 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Archivos JS/JSX generados por error dentro de src (proyecto TS)
+src/**/*.js
+src/**/*.jsx
+src/**/*.js.map
+
+# Build artifacts
+dist/
+node_modules/.vite/
+node_modules/.tmp/
+
+Add-Content -Path .gitignore -Value @"
+
+# ═══════════════════════════════════════════
+# Basura de compilación TS a JS
+# ═══════════════════════════════════════════
+src/**/*.js
+src/**/*.js.map
+tests/**/*.js
+tests/**/*.js.map
+
+# Excepciones (workers/scripts que SÍ son JS legítimo)
+!scripts/**/*.js
+
+# ═══════════════════════════════════════════
+# Tauri
+# ═══════════════════════════════════════════
+src-tauri/target/
+src-tauri/gen/schemas/
+
+# ═══════════════════════════════════════════
+# IDE
+# ═══════════════════════════════════════════
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+"@

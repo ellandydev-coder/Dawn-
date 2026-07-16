@@ -1,0 +1,367 @@
+/* ============================================================
+   MASTER CHANNEL — Estilo REAPER v6/v7 auténtico (v10/10)
+   ============================================================ */
+
+.master-strip {
+  width: 150px;
+  min-width: 150px;
+  height: 100%;
+  background: #464646;
+  border: 1px solid #282828;
+  border-radius: 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  overflow: hidden;
+  user-select: none;
+  flex-shrink: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  transition: opacity 0.15s;
+}
+
+.master-strip.is-muted {
+  opacity: 0.5;
+}
+
+/* ══════════════════════════════════
+   HEADER — Center label + knob
+   ══════════════════════════════════ */
+.master-header {
+  width: 100%;
+  padding: 6px 4px 4px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #4d4d4d;
+  border-bottom: 1px solid #333333;
+  flex-shrink: 0;
+}
+
+.master-center-label {
+  font-size: 9px;
+  color: #8b9aa7;
+  font-weight: 500;
+  margin-bottom: 3px;
+  letter-spacing: 0.2px;
+}
+
+.master-center-knob {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%,
+    #f0f0f0 0%,
+    #b8b8b8 60%,
+    #8a8a8a 100%);
+  border: 1px solid #222222;
+  position: relative;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition: filter 0.12s;
+}
+
+.master-center-knob:hover {
+  filter: brightness(1.05);
+}
+
+/* Punto indicador */
+.master-center-knob::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2.5px;
+  height: 2.5px;
+  background: #111111;
+  border-radius: 50%;
+}
+
+/* ══════════════════════════════════
+   Display de dB
+   ══════════════════════════════════ */
+.master-db-top {
+  width: 100%;
+  padding: 5px 0;
+  font-size: 11px;
+  color: #62a1df;
+  text-align: center;
+  background: #383838;
+  font-weight: 700;
+  border-bottom: 1px solid #2b2b2b;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  flex-shrink: 0;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  letter-spacing: 0.3px;
+}
+
+.master-db-top:hover {
+  background: #404040;
+  color: #7bb5f0;
+}
+
+/* ══════════════════════════════════
+   Etiquetas -inf
+   ══════════════════════════════════ */
+.master-inf-labels {
+  display: flex;
+  padding: 3px 8px 1px 8px;
+  font-size: 9px;
+  color: #777777;
+  font-weight: 600;
+  justify-content: space-between;
+  flex-shrink: 0;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+.master-inf-labels span {
+  width: 35px;
+  text-align: center;
+}
+
+/* ══════════════════════════════════
+   ZONA PRINCIPAL: Meters + Fader + Botones
+   ══════════════════════════════════ */
+.master-main {
+  flex: 1;
+  display: flex;
+  padding: 2px 4px;
+  background: #3d3d3d;
+  min-height: 0;
+  gap: 4px;
+}
+
+/* Bloque Izquierdo: Medidores + escala */
+.master-meters-area {
+  flex: 1;
+  display: flex;
+  background: #2e2e2e;
+  border: 1px solid #222222;
+  border-radius: 1px;
+  padding: 2px 1px;
+  gap: 1px;
+  min-width: 0;
+}
+
+.master-meter {
+  flex: 1;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 1px;
+  overflow: hidden;
+  min-width: 8px;
+}
+
+.master-db-scale {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: 8px;
+  color: #777777;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: bold;
+  text-align: center;
+  min-width: 16px;
+  line-height: 1;
+  padding: 1px 0;
+}
+
+.master-meter-seg {
+  flex: 1;
+  min-height: 2px;
+  background: #1a1a1a;
+  transition: background 0.05s;
+}
+
+.master-meter-seg.active-green  { background: #1c7c3a; }
+.master-meter-seg.active-yellow { background: #b39b1b; }
+.master-meter-seg.active-red    { background: #cf3c3c; }
+
+/* ══════════════════════════════════
+   FADER container
+   ══════════════════════════════════ */
+.master-fader-container {
+  width: 22px;
+  display: flex;
+  justify-content: center;
+  position: relative;
+  height: 100%;
+  flex-shrink: 0;
+}
+
+/* Override del FaderControl para el master */
+.master-fader-container .fader-container {
+  height: 100%;
+  width: 100%;
+}
+
+/* ══════════════════════════════════
+   Bloque Derecho: Botones
+   ══════════════════════════════════ */
+.master-buttons-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 36px;
+  flex-shrink: 0;
+}
+
+.master-btn {
+  width: 100%;
+  height: 18px;
+  background: #323232;
+  border: 1px solid #222222;
+  border-radius: 2px;
+  color: #b0b0b0;
+  font-size: 8px;
+  font-weight: 800;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: background 0.1s, color 0.1s;
+  font-family: inherit;
+  padding: 0;
+}
+
+.master-btn:hover:not(:disabled) {
+  background: #3c3c3c;
+  color: #ffffff;
+}
+
+.master-btn:focus-visible {
+  outline: 1px solid #7a8cff;
+  outline-offset: 1px;
+  z-index: 1;
+  position: relative;
+}
+
+.master-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+/* Variantes */
+.master-btn.btn-mono svg {
+  fill: none;
+  stroke: currentColor;
+  margin-bottom: 1px;
+}
+
+.master-btn.btn-m {
+  color: #a35252;
+}
+
+.master-btn.btn-m.active,
+.master-btn.btn-m[aria-pressed="true"] {
+  background: #b53333;
+  color: #ffffff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 0 4px rgba(181, 51, 51, 0.4);
+}
+
+.master-btn.btn-s {
+  color: #bca158;
+}
+
+.master-btn.btn-route svg {
+  width: 14px;
+  height: 10px;
+}
+
+.master-btn.btn-fx {
+  font-style: italic;
+  font-weight: bold;
+}
+
+.master-btn.btn-power {
+  height: 14px;
+  color: #666666;
+}
+
+.master-btn.btn-power:hover:not(:disabled) {
+  color: #22c55e;
+}
+
+.master-btn.btn-trim {
+  height: 22px;
+  background: #f4f0e6;
+  color: #2e2e2e;
+  font-size: 7px;
+  gap: 1px;
+}
+
+.master-btn.btn-trim:hover:not(:disabled) {
+  background: #fdf9ed;
+}
+
+.master-btn.btn-trim svg {
+  stroke: #2e2e2e;
+  fill: none;
+}
+
+.master-btn.btn-info {
+  height: 16px;
+  font-family: 'Times New Roman', serif;
+  font-style: italic;
+  font-size: 11px;
+  color: #888888;
+}
+
+/* ══════════════════════════════════
+   FOOTER: RMS & MASTER label
+   ══════════════════════════════════ */
+.master-footer {
+  width: 100%;
+  background: #383838;
+  border-top: 1px solid #222222;
+  padding: 4px 6px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.master-rms {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 700;
+  margin-bottom: 2px;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+.master-rms-label {
+  color: #4fa96c;
+}
+
+.master-rms-value {
+  color: #5ca5df;
+}
+
+.master-footer-name {
+  font-size: 12px;
+  font-weight: 800;
+  color: #dddddd;
+  text-align: center;
+  letter-spacing: 1.5px;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* ══════════════════════════════════
+   ACCESIBILIDAD — reduce motion
+   ══════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .master-strip,
+  .master-center-knob,
+  .master-db-top,
+  .master-btn,
+  .master-meter-seg {
+    transition: none;
+  }
+}

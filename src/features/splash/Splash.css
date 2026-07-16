@@ -1,0 +1,46 @@
+/* ============================================
+   SPLASH SCREEN
+   ============================================ */
+.splash {
+  height: 100vh;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 50% 30%, #1a1f2e 0%, #0a0c12 100%);
+}
+.splash-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 3rem 3.5rem;
+  text-align: center;
+  box-shadow: var(--shadow-md), 0 0 60px rgba(99, 102, 241, 0.15);
+  max-width: 420px;
+}
+.splash-logo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.splash-card h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: 4px;
+  margin: 0 0 0.5rem 0;
+  background: linear-gradient(135deg, #fff, #a5b4fc);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+.splash-card p { color: var(--text-secondary); margin: 0 0 2rem 0; }
+.splash-start {
+  background: var(--accent); color: white;
+  padding: 0.9rem 2rem; border-radius: 8px;
+  font-weight: 600; font-size: 0.95rem;
+  transition: all 0.15s;
+  box-shadow: 0 4px 20px var(--accent-glow);
+  border: none; cursor: pointer;
+}
+.splash-start:hover { background: var(--accent-hover); transform: translateY(-1px); }
+.splash-hint { margin-top: 1.5rem; color: var(--text-muted); font-size: 0.75rem; }

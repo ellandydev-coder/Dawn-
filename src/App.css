@@ -1,0 +1,13 @@
+﻿/* ============================================================
+   APP.CSS — Estilos GLOBALES de la aplicación
+   
+   Cada componente importa su propio CSS.
+   Aquí solo van los estilos que NO pertenecen a ningún componente:
+     - animations.css   → @keyframes usados por múltiples componentes
+     - forms.css        → estilos base de inputs/sliders
+     - utilities.css    → clases helper (.mono) y ocultar legacy
+   ============================================================ */
+
+@import "./styles/animations.css";
+@import "./styles/forms.css";
+@import "./styles/utilities.css";

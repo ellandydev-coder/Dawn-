@@ -1,0 +1,472 @@
+/* ============================================================
+   CLIP V2 — Timeline clip (v10/10)
+   ============================================================ */
+
+.clip-v2 {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  min-width: 24px;
+  border: 1px solid;
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: grab;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition:
+    transform 0.08s,
+    box-shadow 0.15s,
+    opacity 0.15s,
+    filter 0.2s;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+  z-index: 3;
+  background: rgba(0, 0, 0, 0.4);
+  outline: none;
+  will-change: transform;
+  box-sizing: border-box;
+}
+
+.clip-v2:hover {
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+  z-index: 4;
+}
+
+.clip-v2:active {
+  cursor: grabbing;
+  opacity: 0.85;
+}
+
+/* ✅ Focus visible (accesibilidad para tabIndex=0) */
+.clip-v2:focus-visible {
+  outline: 2px solid #7a8cff;
+  outline-offset: 2px;
+  box-shadow:
+    0 0 0 4px rgba(122, 140, 255, 0.3),
+    0 4px 14px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  z-index: 5;
+}
+
+/* ══════════════════════════════════
+   ESTADOS
+   ══════════════════════════════════ */
+
+/* Dragging (fantasma flotante) */
+.clip-v2.is-dragging-live {
+  z-index: 100;
+  cursor: grabbing !important;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.5),
+    0 12px 40px rgba(0, 0, 0, 0.7),
+    0 0 40px currentColor !important;
+  transform: translateY(-2px) scale(1.02);
+  opacity: 0.95;
+  pointer-events: none;
+}
+
+/* ✅ Seleccionado */
+.clip-v2.is-selected {
+  box-shadow:
+    0 0 0 2px #7a8cff,
+    0 2px 12px rgba(122, 140, 255, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  z-index: 4;
+}
+
+.clip-v2.is-selected:hover {
+  box-shadow:
+    0 0 0 2px #a0b0ff,
+    0 4px 18px rgba(122, 140, 255, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.clip-v2.is-selected:focus-visible {
+  box-shadow:
+    0 0 0 2px #a0b0ff,
+    0 0 0 5px rgba(122, 140, 255, 0.4),
+    0 4px 18px rgba(122, 140, 255, 0.6);
+}
+
+/* ✅ Muted */
+.clip-v2.is-muted {
+  opacity: 0.5;
+  filter: grayscale(0.6);
+  cursor: default;
+}
+
+.clip-v2.is-muted:hover {
+  opacity: 0.6;
+  transform: none;
+}
+
+.clip-v2.is-muted .clip-waveform {
+  opacity: 0.7;
+}
+
+/* Combinación selected + muted */
+.clip-v2.is-selected.is-muted {
+  opacity: 0.75;
+  filter: grayscale(0.4);
+}
+
+/* ══════════════════════════════════
+   HEADER
+   ══════════════════════════════════ */
+
+.clip-header {
+  height: 15px;
+  min-height: 12px;
+  padding: 0 6px;
+  display: flex;
+  align-items: center;
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: #0a0a0a;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+  letter-spacing: 0.2px;
+  overflow: hidden;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+  box-shadow:
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  line-height: 15px;
+  box-sizing: border-box;
+}
+
+.clip-header-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  width: 100%;
+  pointer-events: none;
+}
+
+/* ══════════════════════════════════
+   BODY
+   ══════════════════════════════════ */
+
+.clip-body {
+  flex: 1 1 auto;
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+  /* Fondo oscuro real, sin gradient del track */
+  background: #1a1a1a !important;
+}
+
+.clip-waveform {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.clip-body-duration {
+  position: absolute;
+  bottom: 2px;
+  right: 4px;
+  font-size: 0.55rem;
+  color: rgba(255, 255, 255, 0.75);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 1px 4px;
+  border-radius: 2px;
+  line-height: 1.4;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Ocultar duración en clips muy pequeños */
+.clip-v2[style*="width: 2"] .clip-body-duration,
+.clip-v2[style*="width: 3"] .clip-body-duration,
+.clip-v2[style*="width: 4"] .clip-body-duration {
+  display: none;
+}
+
+/* ══════════════════════════════════
+   CLIP PREVIEW (drag externo — legacy .clip)
+   ══════════════════════════════════ */
+
+.clip {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  min-width: 24px;
+  border: 2px solid;
+  border-radius: 4px;
+  padding: 4px 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 8;
+}
+
+.clip-name {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #0a0a0a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.clip-duration {
+  font-size: 0.6rem;
+  color: rgba(0, 0, 0, 0.65);
+  align-self: flex-end;
+  font-variant-numeric: tabular-nums;
+}
+
+.clip-preview {
+  border-style: dashed !important;
+  border-width: 2px !important;
+  opacity: 0.9;
+  animation: preview-pulse 1.2s ease-in-out infinite;
+  z-index: 8;
+  box-shadow:
+    0 0 20px currentColor,
+    0 4px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+.clip-preview .clip-name {
+  font-style: italic;
+}
+
+@keyframes preview-pulse {
+  0%, 100% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.005);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   DROP PREVIEW — Estilo REAPER
+   (ClipView renderizado como preview durante drag de asset)
+   ══════════════════════════════════════════════════════════════ */
+
+/*
+ * Cuando un ClipView tiene data-clip-id="preview-*",
+ * significa que es el preview de un asset arrastrado.
+ * Le damos aspecto fantasma con borde discontinuo, pulso y no interactividad.
+ */
+.clip-v2[data-clip-id^="preview-"] {
+  pointer-events: none;
+  opacity: 0.88;
+  border-style: dashed !important;
+  border-width: 2px !important;
+  z-index: 30;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.35),
+    0 0 22px currentColor,
+    0 6px 18px rgba(0, 0, 0, 0.5) !important;
+  animation: drop-preview-pulse 1.4s ease-in-out infinite;
+  cursor: none !important;
+}
+
+/* Header ligeramente más brillante */
+.clip-v2[data-clip-id^="preview-"] .clip-header {
+  filter: brightness(1.15) saturate(1.2);
+}
+
+/* Body con velo blanco sutil para reforzar el look "fantasma" */
+.clip-v2[data-clip-id^="preview-"] .clip-body {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.12),
+    rgba(255, 255, 255, 0.04)
+  );
+}
+
+/* Nombre en cursiva para reforzar que es preview */
+.clip-v2[data-clip-id^="preview-"] .clip-header-name {
+  font-style: italic;
+}
+
+/* Ocultar duración del preview (no aporta y molesta visualmente) */
+.clip-v2[data-clip-id^="preview-"] .clip-body-duration {
+  display: none;
+}
+
+/* No usar hover ni focus en previews */
+.clip-v2[data-clip-id^="preview-"]:hover,
+.clip-v2[data-clip-id^="preview-"]:focus-visible {
+  transform: none;
+  outline: none;
+}
+
+@keyframes drop-preview-pulse {
+  0%, 100% { opacity: 0.88; }
+  50%      { opacity: 1;    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   GUÍAS VERTICALES DE DROP — Estilo REAPER
+   Líneas discontinuas laterales que marcan inicio y fin del preview
+   ══════════════════════════════════════════════════════════════ */
+
+.ws-drop-guide {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  pointer-events: none;
+  z-index: 31;
+  background: repeating-linear-gradient(
+    180deg,
+    var(--accent, #7a8cff) 0,
+    var(--accent, #7a8cff) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+  opacity: 0.75;
+}
+
+.ws-drop-guide-left {
+  box-shadow: -1px 0 0 rgba(122, 140, 255, 0.25);
+}
+
+.ws-drop-guide-right {
+  box-shadow: 1px 0 0 rgba(122, 140, 255, 0.25);
+}
+
+/* ══════════════════════════════════
+   DRAG GHOST
+   ══════════════════════════════════ */
+
+.drag-ghost {
+  position: absolute;
+  top: -1000px;
+  padding: 6px 12px;
+  background: var(--accent, #7a8cff);
+  color: white;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  box-shadow: 0 4px 20px var(--accent-glow, rgba(122, 140, 255, 0.5));
+  pointer-events: none;
+  z-index: 9999;
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* ══════════════════════════════════
+   CONTEXT MENU HINT
+   ══════════════════════════════════ */
+
+.clip-v2 {
+  /* Hint visual sutil al hacer right-click */
+  -webkit-touch-callout: none;
+}
+
+.clip-v2:has(> .clip-context-menu-active) {
+  box-shadow:
+    0 0 0 2px #22c55e,
+    0 4px 14px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* ══════════════════════════════════
+   CLIP TIPS (tooltip nativo)
+   ══════════════════════════════════ */
+
+.clip-v2[title] {
+  cursor: grab;
+}
+
+.clip-v2.is-muted[title] {
+  cursor: default;
+}
+
+/* ══════════════════════════════════
+   ACCESIBILIDAD — reduce motion
+   ══════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  .clip-v2,
+  .clip-waveform,
+  .clip-body-duration {
+    transition: none;
+  }
+
+  .clip-v2:hover {
+    transform: none;
+  }
+
+  .clip-v2.is-dragging-live {
+    transform: none;
+  }
+
+  .clip-preview,
+  .clip-v2[data-clip-id^="preview-"] {
+    animation: none;
+  }
+}
+
+/* ══════════════════════════════════
+   HIGH CONTRAST MODE
+   ══════════════════════════════════ */
+
+@media (prefers-contrast: more) {
+  .clip-v2 {
+    border-width: 2px;
+  }
+
+  .clip-v2.is-selected {
+    box-shadow:
+      0 0 0 3px #ffffff,
+      0 0 0 5px #7a8cff;
+  }
+
+  .clip-v2.is-muted {
+    opacity: 0.6;
+    filter: none;
+    border-style: dashed;
+  }
+
+  .ws-drop-guide {
+    opacity: 1;
+    width: 2px;
+  }
+}
+
+/* ══════════════════════════════════
+   RESPONSIVE (clips pequeños)
+   ══════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .clip-header {
+    height: 12px;
+    font-size: 0.55rem;
+    line-height: 12px;
+  }
+
+  .clip-body-duration {
+    font-size: 0.5rem;
+  }
+}

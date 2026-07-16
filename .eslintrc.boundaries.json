@@ -1,0 +1,33 @@
+{
+  "plugins": ["boundaries"],
+  "settings": {
+    "boundaries/elements": [
+      { "type": "app",      "pattern": "src/app/*" },
+      { "type": "features", "pattern": "src/features/*", "capture": ["feature"] },
+      { "type": "state",    "pattern": "src/state/*" },
+      { "type": "services", "pattern": "src/services/*" },
+      { "type": "audio",    "pattern": "src/audio/*" },
+      { "type": "domain",   "pattern": "src/domain/*" },
+      { "type": "shared",   "pattern": "src/shared/*" },
+      { "type": "workers",  "pattern": "src/workers/*" }
+    ]
+  },
+  "rules": {
+    "boundaries/element-types": ["error", {
+      "default": "disallow",
+      "rules": [
+        { "from": "app",      "allow": ["features", "state", "services", "audio", "domain", "shared"] },
+        { "from": "features", "allow": [
+          "shared", "state", "services", "domain",
+          { "type": "features", "capture": { "feature": "!${feature}" } }
+        ]},
+        { "from": "state",    "allow": ["services", "audio", "domain", "shared"] },
+        { "from": "services", "allow": ["audio", "domain", "shared"] },
+        { "from": "audio",    "allow": ["domain", "shared"] },
+        { "from": "workers",  "allow": ["domain", "shared"] },
+        { "from": "shared",   "allow": ["shared", "domain"] },
+        { "from": "domain",   "allow": ["domain"] }
+      ]
+    }]
+  }
+}

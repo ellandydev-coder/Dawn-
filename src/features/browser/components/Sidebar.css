@@ -1,0 +1,327 @@
+/* ============================================
+   PANEL HEADER (compartido con sidebar)
+   ============================================ */
+.panel-header {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-panel-2);
+}
+.panel-title {
+  font-size: 0.7rem; font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--text-secondary);
+}
+.panel-count {
+  font-size: 0.7rem; color: var(--text-muted);
+  background: var(--bg-app);
+  padding: 0.1rem 0.5rem; border-radius: 10px;
+}
+.panel-loading {
+  margin-left: auto;
+  font-size: 0.65rem;
+  color: var(--accent);
+  animation: pulse-loading 1s ease-in-out infinite;
+}
+
+@keyframes pulse-loading {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+
+/* ============================================
+   SIDEBAR (biblioteca)
+   ============================================ */
+.sidebar {
+  position: relative;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  transition: all 0.15s;
+}
+.sidebar-content {
+  display: flex; flex-direction: column;
+  padding: 0; overflow: hidden; flex: 1;
+}
+
+/* ============================================
+   ERROR BANNER
+   ============================================ */
+.sidebar-error {
+  margin: 0.5rem 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 4px;
+  font-size: 0.72rem;
+  animation: slide-in-error 0.2s ease-out;
+}
+
+@keyframes slide-in-error {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================
+   ESTADO VACÍO
+   ============================================ */
+.empty-sidebar-wrap {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 1.5rem; padding: 1rem;
+}
+.empty-sidebar { text-align: center; color: var(--text-muted); }
+.empty-sidebar p {
+  font-size: 0.8rem; margin: 0.75rem 0 0 0;
+  line-height: 1.5;
+}
+.empty-sidebar-wrap .dropzone { width: 100%; max-width: 260px; }
+
+/* ============================================
+   LISTA DE ASSETS
+   ============================================ */
+.asset-list {
+  flex: 1; overflow-y: auto;
+  padding: 0.75rem; margin: 0;
+  display: flex; flex-direction: column; gap: 0.35rem;
+}
+.sidebar-footer {
+  border-top: 1px solid var(--border);
+  padding: 0.75rem;
+  background: var(--bg-panel-2);
+  flex-shrink: 0;
+}
+.sidebar-footer .dropzone { padding: 0.9rem 0.75rem; }
+.sidebar-footer .dropzone-text { font-size: 0.75rem; }
+
+/* ============================================
+   DROPZONE
+   ============================================ */
+.dropzone {
+  border: 2px dashed var(--border-strong);
+  border-radius: 8px;
+  padding: 1.2rem 1rem;
+  text-align: center; cursor: pointer;
+  transition: all 0.15s;
+  background: var(--bg-panel-2);
+  display: flex; flex-direction: column;
+  align-items: center; gap: 0.4rem;
+}
+.dropzone:hover,
+.dropzone.dragging {
+  border-color: var(--accent);
+  background: rgba(99, 102, 241, 0.05);
+}
+.dropzone.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.dropzone:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.dropzone-text {
+  font-size: 0.8rem; color: var(--text-primary);
+  font-weight: 500;
+}
+.dropzone-hint {
+  font-size: 0.65rem; color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+.dropzone-error {
+  margin-top: 0.5rem; width: 100%;
+  padding: 0.4rem 0.6rem;
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5; border-radius: 4px;
+  font-size: 0.7rem;
+  text-align: left;
+}
+.dropzone-error ul {
+  margin: 0.25rem 0 0 0;
+  padding-left: 1rem;
+  list-style: disc;
+}
+.dropzone-error li {
+  font-size: 0.7rem;
+  line-height: 1.4;
+}
+
+/* ============================================
+   ASSET ITEM
+   ============================================ */
+.asset-item {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.5rem;
+  background: var(--bg-panel-2);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  transition: all 0.12s;
+  cursor: grab;
+}
+.asset-item:active { cursor: grabbing; }
+.asset-item:hover {
+  background: var(--bg-elev);
+  border-color: var(--border);
+}
+.asset-item[draggable='true']:hover .asset-thumb {
+  background: rgba(99, 102, 241, 0.25);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.asset-item.is-dragging { opacity: 0.4; transform: scale(0.95); }
+.asset-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Estado: reproduciendo */
+.asset-item.is-playing .asset-thumb {
+  background: rgba(34, 197, 94, 0.25);
+  box-shadow: 0 0 0 1px var(--success);
+  animation: pulse-playing 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse-playing {
+  0%, 100% { box-shadow: 0 0 0 1px var(--success), 0 0 0 rgba(34, 197, 94, 0.4); }
+  50%      { box-shadow: 0 0 0 1px var(--success), 0 0 10px rgba(34, 197, 94, 0.4); }
+}
+
+/* Estado: en uso en el timeline */
+.asset-item.is-in-use {
+  border-color: rgba(99, 102, 241, 0.3);
+}
+.asset-item.is-in-use .asset-name::before {
+  content: '● ';
+  color: var(--accent);
+  font-size: 0.6rem;
+}
+
+/* Estado: confirmando eliminación */
+.asset-item.is-confirming-delete {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.asset-thumb {
+  width: 28px; height: 28px;
+  display: grid; place-items: center;
+  background: rgba(99, 102, 241, 0.12);
+  border-radius: 4px;
+  flex-shrink: 0; transition: all 0.12s;
+}
+.asset-info { flex: 1; min-width: 0; }
+.asset-name {
+  font-size: 0.78rem; font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis;
+}
+.asset-meta {
+  font-size: 0.65rem; color: var(--text-muted);
+  margin-top: 2px;
+}
+.asset-btn {
+  width: 24px; height: 24px;
+  display: grid; place-items: center;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  background: transparent; border: none; cursor: pointer;
+  transition: all 0.12s;
+}
+.asset-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.asset-btn.play:hover { background: var(--success); color: white; }
+.asset-btn.del:hover  { background: var(--danger);  color: white; }
+.asset-btn:disabled   { opacity: 0.3; cursor: not-allowed; }
+
+/* Botón play cuando está reproduciendo */
+.asset-btn.play.is-active {
+  background: var(--success);
+  color: white;
+}
+
+/* Botón delete cuando pide confirmación */
+.asset-btn.del.is-confirming {
+  background: var(--danger);
+  color: white;
+  animation: shake-confirm 0.4s ease-in-out;
+}
+
+@keyframes shake-confirm {
+  0%, 100% { transform: translateX(0); }
+  25%      { transform: translateX(-2px); }
+  75%      { transform: translateX(2px); }
+}
+
+/* ============================================
+   FILE HOVER (drop global sobre sidebar)
+   ============================================ */
+.sidebar.file-hover {
+  background: linear-gradient(180deg,
+    rgba(99, 102, 241, 0.12) 0%,
+    rgba(99, 102, 241, 0.05) 100%);
+  box-shadow: inset 0 0 0 2px var(--accent),
+              inset 0 0 60px rgba(99, 102, 241, 0.2);
+}
+.sidebar.file-hover .panel-header {
+  background: rgba(99, 102, 241, 0.15);
+  border-bottom-color: var(--accent);
+}
+.sidebar.file-hover .dropzone,
+.sidebar.file-hover .dropzone:hover,
+.sidebar.file-hover .dropzone.dragging {
+  border-color: var(--border-strong);
+  background: var(--bg-panel-2);
+  opacity: 0.4; transform: none;
+}
+.sidebar.file-hover .empty-sidebar,
+.sidebar.file-hover .asset-list,
+.sidebar.file-hover .sidebar-footer {
+  opacity: 0.3;
+}
+
+/* ============================================
+   DROP OVERLAY
+   ============================================ */
+.sidebar-drop-overlay {
+  position: absolute; inset: 0; z-index: 100;
+  background: radial-gradient(circle at center,
+    rgba(99, 102, 241, 0.35) 0%,
+    rgba(99, 102, 241, 0.15) 60%,
+    rgba(14, 16, 21, 0.85) 100%);
+  backdrop-filter: blur(4px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 1rem; pointer-events: none;
+  animation: overlay-in 0.2s ease-out;
+  border: 2px dashed var(--accent);
+}
+.drop-overlay-title {
+  font-size: 1.1rem; font-weight: 700;
+  color: white; letter-spacing: 1px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  animation: pulse-title 1.5s ease-in-out infinite;
+}
+.drop-overlay-hint {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.5px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ============================================
+   ANIMATIONS COMPARTIDAS
+   ============================================ */
+@keyframes overlay-in {
+  from { opacity: 0; transform: scale(0.98); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulse-title {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.03); }
+}

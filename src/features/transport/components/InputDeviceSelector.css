@@ -1,0 +1,116 @@
+/* src/features/transport/components/InputDeviceSelector.css
+   ============================================
+   Selector de dispositivo de entrada
+   El menú se renderiza vía Portal en <body>,
+   así que usa posicionamiento fixed con coords viewport.
+   ============================================ */
+
+.ids-root {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* El trigger reutiliza .tb-icon-btn de Topbar.css.
+   Solo añadimos feedback visual al abrir. */
+.ids-trigger.is-open {
+  background: var(--bg-hover);
+  color: #fff;
+}
+
+/* ─── Menú flotante (portal en <body>) ──────────────────────── */
+.ids-menu {
+  position: fixed;
+  min-width: 260px;
+  max-width: 360px;
+  padding: 6px;
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  z-index: 9999;
+  animation: ids-fade-in 0.12s ease-out;
+}
+
+@keyframes ids-fade-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.ids-menu-header {
+  padding: 6px 10px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+}
+
+.ids-divider {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--border-strong);
+}
+
+/* ─── Item del menú ─────────────────────────────────────────── */
+.ids-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.ids-item:hover {
+  background: var(--bg-hover);
+  color: #fff;
+}
+
+.ids-item.is-selected {
+  color: var(--accent);
+}
+
+.ids-check {
+  width: 12px;
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.ids-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ─── Estado vacío ──────────────────────────────────────────── */
+.ids-empty {
+  padding: 12px 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.4;
+}
+
+.ids-empty small {
+  color: var(--text-muted);
+  opacity: 0.7;
+  font-size: 11px;
+}
+
+/* ─── Reduce motion ─────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .ids-menu { animation: none; }
+  .ids-item { transition: none; }
+}

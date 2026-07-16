@@ -1,0 +1,40 @@
+/* ============================================================
+   FADER TOOLTIP — Estilo REAPER / Ableton
+   Extiende el Tooltip genérico con formato dB + linear
+   ============================================================ */
+
+/* Override del tooltip base cuando se usa como fader tooltip */
+.tooltip.fader-tooltip {
+  min-width: 62px;
+  padding: 6px 10px;
+  background: linear-gradient(180deg, #2f2f34 0%, #1f1f22 100%);
+  border-color: rgba(122, 140, 255, 0.25);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.65),
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(122, 140, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.fader-tooltip-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  line-height: 1.1;
+}
+
+.fader-tooltip-db {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffffff;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.6);
+}
+
+.fader-tooltip-linear {
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: 0.03em;
+}

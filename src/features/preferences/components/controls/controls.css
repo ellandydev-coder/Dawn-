@@ -1,0 +1,257 @@
+/* src/features/preferences/components/controls/controls.css */
+
+/* ═══════════════════════════════════════════════════════════════
+   🎛️ PREFERENCES CONTROLS — Estilos compartidos
+   ---------------------------------------------------------------
+   Building blocks para paneles de Preferences:
+     • PrefCheckbox
+     • PrefSelect
+     • PrefTextField
+     • PrefSection
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── PrefSection ───────────────────────────────────────────── */
+
+.pref-section {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0 4px;
+}
+
+.pref-section + .pref-section {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #2a2a35;
+}
+
+.pref-section__header {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 10px;
+}
+
+.pref-section__title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #dcdce6;
+  margin: 0;
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pref-section__chevron {
+  font-size: 10px;
+  color: #6a6a78;
+}
+
+.pref-section__desc {
+  font-size: 11px;
+  color: #7c7c8a;
+  margin: 0;
+}
+
+.pref-section__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── PrefCheckbox ──────────────────────────────────────────── */
+
+.pref-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: #d0d0d8;
+  cursor: pointer;
+  user-select: none;
+}
+
+.pref-checkbox.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pref-checkbox__input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border: 1px solid #4a4a58;
+  border-radius: 3px;
+  background: #12121a;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: inline-grid;
+  place-content: center;
+  transition: background 0.12s, border-color 0.12s;
+  margin: 0;
+}
+
+.pref-checkbox__input:hover:not(:disabled) {
+  border-color: #6a6a80;
+}
+
+.pref-checkbox__input:checked {
+  background: #2d5aa8;
+  border-color: #4a7ac8;
+}
+
+.pref-checkbox__input:checked::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background: #fff;
+  clip-path: polygon(
+    14% 44%,
+    0 60%,
+    39% 100%,
+    100% 21%,
+    83% 5%,
+    39% 65%
+  );
+}
+
+.pref-checkbox__input:disabled {
+  cursor: not-allowed;
+}
+
+.pref-checkbox__label {
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.pref-checkbox.is-disabled .pref-checkbox__label {
+  cursor: not-allowed;
+}
+
+.pref-checkbox__hint {
+  width: 100%;
+  font-size: 10px;
+  color: #7c7c8a;
+  margin-left: 22px;
+  margin-top: 2px;
+}
+
+/* ── PrefSelect ────────────────────────────────────────────── */
+
+.pref-select {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  color: #d0d0d8;
+}
+
+.pref-select--inline {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.pref-select--stacked {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.pref-select.is-disabled {
+  opacity: 0.45;
+}
+
+.pref-select__label {
+  font-size: 11px;
+  color: #b8b8c4;
+  white-space: nowrap;
+}
+
+.pref-select__input {
+  background: #12121a;
+  border: 1px solid #3a3a48;
+  color: #dcdce6;
+  font-size: 11px;
+  padding: 3px 6px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-family: inherit;
+  min-width: 140px;
+  transition: border-color 0.12s;
+}
+
+.pref-select__input:hover:not(:disabled) {
+  border-color: #5a5a70;
+}
+
+.pref-select__input:focus {
+  outline: none;
+  border-color: #4a7ac8;
+}
+
+.pref-select__input:disabled {
+  cursor: not-allowed;
+}
+
+.pref-select__hint {
+  width: 100%;
+  font-size: 10px;
+  color: #7c7c8a;
+  margin-top: 2px;
+}
+
+/* ── PrefTextField ─────────────────────────────────────────── */
+
+.pref-textfield {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pref-textfield.is-disabled {
+  opacity: 0.45;
+}
+
+.pref-textfield__label {
+  font-size: 11px;
+  color: #b8b8c4;
+}
+
+.pref-textfield__input {
+  background: #12121a;
+  border: 1px solid #3a3a48;
+  color: #dcdce6;
+  font-size: 11px;
+  padding: 5px 8px;
+  border-radius: 3px;
+  font-family: inherit;
+  transition: border-color 0.12s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pref-textfield__input.is-mono {
+  font-family: 'Courier New', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.1px;
+}
+
+.pref-textfield__input:hover:not(:disabled) {
+  border-color: #5a5a70;
+}
+
+.pref-textfield__input:focus {
+  outline: none;
+  border-color: #4a7ac8;
+}
+
+.pref-textfield__input:disabled {
+  cursor: not-allowed;
+}
+
+.pref-textfield__hint {
+  font-size: 10px;
+  color: #7c7c8a;
+}
