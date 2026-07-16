@@ -1,8 +1,9 @@
 // src/features/preferences/components/PreferencesSidebar.tsx
 
 import { memo, useMemo, useCallback } from 'react';
-import { buildCategoryTree } from '../data/preferencesCatalog';
-import type { PreferenceCategoryNode } from '@domain/models/PreferenceCategory';
+import { preferencesRegistry } from '@features/preferences/registry';
+import type { PreferencePanelEntry } from '@features/preferences/registry';
+import { buildTree } from '@shared/registry/registry.utils';
 
 // ═══════════════════════════════════════════════════════════════
 // 🎯 TIPOS
@@ -24,30 +25,36 @@ export interface PreferencesSidebarProps {
  * ------------------
  * Sidebar izquierdo con el árbol jerárquico de categorías.
  *
- * Estructura visual:
- *   Categoría raíz
- *     ├─ Sub-categoría 1
- *     ├─ Sub-categoría 2
- *   Otra categoría raíz
- *     ├─ Sub-categoría 3
+ * Fuente de datos:
+ *   • `preferencesRegistry.getAll()` — todas las entries descubiertas
+ *     por el bootstrap (paneles reales + seed).
+ *   • `buildTree()` construye el árbol raíz → children basándose
+ *     en el campo `parentId` de cada entry.
  *
- * La categoría seleccionada se resalta en azul.
- * Todas las categorías (raíz y sub) son clicables.
+ * La categoría seleccionada se resalta en azul. Todas las
+ * categorías (raíz agrupadoras, raíz con panel, sub-categorías)
+ * son clicables por igual.
  */
 function PreferencesSidebarBase({
   selectedId,
   onSelect,
 }: PreferencesSidebarProps) {
-  // El árbol se construye una sola vez (el catálogo es estático).
-  const tree = useMemo(() => buildCategoryTree(), []);
+  // El árbol se recalcula solo si cambia el contenido del registry.
+  // Como el registry es inmutable después del bootstrap, en la práctica
+  // se calcula 1 sola vez (al primer render).
+  const tree = useMemo(
+    () => buildTree<PreferencePanelEntry>(preferencesRegistry.getAll()),
+    []
+  );
 
   return (
     <nav className="prefs-sidebar" aria-label="Preferences categories">
       <ul className="prefs-sidebar__list" role="tree">
-        {tree.map((node) => (
+        {tree.map(({ entry, children }) => (
           <PreferenceNode
-            key={node.category.id}
-            node={node}
+            key={entry.id}
+            entry={entry}
+            children={children}
             selectedId={selectedId}
             onSelect={onSelect}
           />
@@ -60,26 +67,27 @@ function PreferencesSidebarBase({
 export const PreferencesSidebar = memo(PreferencesSidebarBase);
 
 // ═══════════════════════════════════════════════════════════════
-// 🌿 PREFERENCE NODE (recursivo pero solo 1 nivel de anidación)
+// 🌿 PREFERENCE NODE (raíz + hijos)
 // ═══════════════════════════════════════════════════════════════
 
 interface PreferenceNodeProps {
-  node: PreferenceCategoryNode;
+  entry: PreferencePanelEntry;
+  children: readonly PreferencePanelEntry[];
   selectedId: string;
   onSelect: (id: string) => void;
 }
 
 const PreferenceNode = memo(function PreferenceNode({
-  node,
+  entry,
+  children,
   selectedId,
   onSelect,
 }: PreferenceNodeProps) {
-  const { category, children } = node;
-  const isSelected = category.id === selectedId;
+  const isSelected = entry.id === selectedId;
 
   const handleClick = useCallback(() => {
-    onSelect(category.id);
-  }, [category.id, onSelect]);
+    onSelect(entry.id);
+  }, [entry.id, onSelect]);
 
   return (
     <li className="prefs-sidebar__node" role="none">
@@ -89,26 +97,26 @@ const PreferenceNode = memo(function PreferenceNode({
         onClick={handleClick}
         role="treeitem"
         aria-selected={isSelected}
-        title={category.description ?? category.label}
+        title={entry.description ?? entry.label}
       >
-        {category.label}
+        {entry.label}
       </button>
 
       {children.length > 0 && (
         <ul className="prefs-sidebar__children" role="group">
           {children.map((child) => {
-            const childSelected = child.category.id === selectedId;
+            const childSelected = child.id === selectedId;
             return (
-              <li key={child.category.id} role="none">
+              <li key={child.id} role="none">
                 <button
                   type="button"
                   className={`prefs-sidebar__item prefs-sidebar__item--child ${childSelected ? 'is-selected' : ''}`}
-                  onClick={() => onSelect(child.category.id)}
+                  onClick={() => onSelect(child.id)}
                   role="treeitem"
                   aria-selected={childSelected}
-                  title={child.category.description ?? child.category.label}
+                  title={child.description ?? child.label}
                 >
-                  {child.category.label}
+                  {child.label}
                 </button>
               </li>
             );

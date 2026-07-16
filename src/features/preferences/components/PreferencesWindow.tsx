@@ -8,7 +8,7 @@ import {
   selectSelectedPreferenceId,
 } from '@state/slices/ui/uiSlice';
 import { FloatingWindow } from '@shared/components/FloatingWindow';
-import { getDefaultCategoryId } from '../data/preferencesCatalog';
+import { preferencesRegistry } from '@features/preferences/registry';
 import { PreferencesSidebar } from './PreferencesSidebar';
 import { PreferencesContent } from './PreferencesContent';
 
@@ -24,6 +24,19 @@ const WINDOW_WIDTH = 820;
 const WINDOW_MIN_HEIGHT = 520;
 
 // ═══════════════════════════════════════════════════════════════
+// 🛠️ HELPERS
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Devuelve el ID de la primera entry del registry (según orden).
+ * Fallback vacío si por alguna razón el registry está vacío.
+ */
+function getFirstPreferenceId(): string {
+  const first = preferencesRegistry.getAll()[0];
+  return first?.id ?? '';
+}
+
+// ═══════════════════════════════════════════════════════════════
 // 🏗️ COMPONENTE
 // ═══════════════════════════════════════════════════════════════
 
@@ -32,40 +45,32 @@ const WINDOW_MIN_HEIGHT = 520;
  * -----------------
  * Ventana flotante de Preferences (estilo REAPER Preferences).
  *
- * Este componente asume que ya está "abierto" (el host lo renderiza
- * condicionalmente basado en `showPreferences` del store).
+ * Fuente de datos:
+ *   • `preferencesRegistry` — descubierto en el bootstrap via Vite glob
+ *   • `selectedPreferenceId` (Redux) — persiste entre aperturas
  *
- * Estructura:
+ * Estructura visual:
  *   ┌───────────────────────────────────────────────────────┐
- *   │ Preferences                              [📌] [×]     │  ← FloatingWindow
+ *   │ Preferences                              [📌] [×]     │
  *   ├──────────────────┬────────────────────────────────────┤
- *   │ General          │                                    │
- *   │   Startup        │                                    │
- *   │ Audio            │   PreferencesContent               │
- *   │   Device         │   (panel de la categoría activa)   │
- *   │ ▶ Appearance     │                                    │
- *   │ ...              │                                    │
+ *   │ Sidebar (tree)   │  Content (component o placeholder) │
  *   └──────────────────┴────────────────────────────────────┘
- *
- * La categoría seleccionada persiste en Redux → sobrevive
- * al cerrar/reabrir la ventana durante la sesión.
  */
 function PreferencesWindowBase() {
   const dispatch = useAppDispatch();
   const selectedId = useAppSelector(selectSelectedPreferenceId);
 
-  // ─── Selección inicial (primera vez que se abre) ────────────
-
+  // ─── Selección inicial ──────────────────────────────────────
   /*
-   * Si el usuario nunca ha abierto Preferences, `selectedId` es null.
-   * Aplicamos el default del catálogo la primera vez.
+   * Si el usuario nunca ha abierto Preferences, selectedId es null.
+   * Aplicamos el primer id del registry como default.
    *
-   * Este useEffect es idempotente: solo dispara la acción cuando
-   * realmente no hay selección previa. En cargas posteriores no hace nada.
+   * Idempotente: solo dispara la acción cuando realmente no hay
+   * selección previa.
    */
   useEffect(() => {
     if (selectedId === null) {
-      dispatch(setSelectedPreference(getDefaultCategoryId()));
+      dispatch(setSelectedPreference(getFirstPreferenceId()));
     }
   }, [selectedId, dispatch]);
 
@@ -84,10 +89,7 @@ function PreferencesWindowBase() {
 
   // ─── Render ─────────────────────────────────────────────────
 
-  // Mientras se resuelve el default (1 tick), evitamos renderizar
-  // el content con un id vacío. La ventana ya tiene su chrome montado
-  // via FloatingWindow, así que el flash es imperceptible.
-  const effectiveId = selectedId ?? getDefaultCategoryId();
+  const effectiveId = selectedId ?? getFirstPreferenceId();
 
   return (
     <FloatingWindow
