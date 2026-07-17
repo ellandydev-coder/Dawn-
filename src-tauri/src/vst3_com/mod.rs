@@ -23,7 +23,8 @@
 pub mod funknown;
 pub mod ifactory;
 pub mod icomponent;
-
+pub mod string_convert;  // ← NUEVO
+pub mod ihost;              // ← NUEVO
 // ═══════════════════════════════════════════════════════════════
 // 🎯 TIPOS PRIMITIVOS
 // ═══════════════════════════════════════════════════════════════
