@@ -14,6 +14,14 @@
 // • Filtra "WaveShell*" (case-insensitive)
 // • Aplica heurística de metadatos via `metadata::detect_metadata`
 // • Si no se pasan rutas, usa las por defecto del OS
+//
+// ── FORMATO DEL ID (Fase 1.5) ──
+// El id tiene formato "vst3:<path_absoluto>"
+// Ej: "vst3:C:\Program Files\Common Files\VST3\Auxfeed.vst3"
+//
+// Esto permite al frontend extraer el bundle path directamente
+// del pluginId sin necesidad de buscar en ningún catálogo.
+// El FxChainPluginUI lo usa para lanzar vst3_probe_plugin.
 
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -93,26 +101,6 @@ fn is_shell_plugin(path: &Path) -> bool {
 // 🎯 HELPERS
 // ═══════════════════════════════════════════════════════════════
 
-/// Convierte un texto a un slug apto para id.
-fn slugify(text: &str) -> String {
-    text.to_lowercase()
-        .chars()
-        .map(|c| {
-            if c.is_alphanumeric() {
-                c
-            } else if c == '.' || c == ' ' || c == '_' {
-                '-'
-            } else {
-                c
-            }
-        })
-        .collect::<String>()
-        .split('-')
-        .filter(|s| !s.is_empty())
-        .collect::<Vec<_>>()
-        .join("-")
-}
-
 fn extract_name(path: &Path) -> String {
     path.file_stem()
         .and_then(|s| s.to_str())
@@ -121,24 +109,26 @@ fn extract_name(path: &Path) -> String {
 }
 
 /// Crea un `ScannedPlugin` aplicando heurística de metadatos.
+///
+/// El `id` tiene formato `"vst3:<path_absoluto>"` para que el
+/// frontend pueda extraer el bundle path directamente.
 fn build_plugin_entry(path: &Path) -> ScannedPlugin {
-    let name = extract_name(path);
-    let meta = metadata::detect_metadata(path, &name);
-
+    let name     = extract_name(path);
+    let meta     = metadata::detect_metadata(path, &name);
     let path_str = path.to_string_lossy().into_owned();
 
-    let vendor_slug = slugify(&meta.vendor);
-    let name_slug = slugify(&name);
-    let id = format!("vst3.{}.{}", vendor_slug, name_slug);
+    // ID = "vst3:" + path absoluto
+    // El frontend hace: pluginId.slice("vst3:".length) → bundle path
+    let id = format!("vst3:{}", path_str);
 
     ScannedPlugin {
         id,
         name,
-        vendor: meta.vendor,
+        vendor:   meta.vendor,
         category: meta.category,
-        format: "vst3".to_string(),
-        version: meta.version,  // ← CAMBIO: era "0.0.0", ahora usa meta.version
-        path: path_str,
+        format:   "vst3".to_string(),
+        version:  meta.version,
+        path:     path_str,
         available: true,
     }
 }
@@ -155,7 +145,7 @@ fn scan_single_path(root: &Path) -> Vec<ScannedPlugin> {
         return Vec::new();
     }
 
-    let mut found = Vec::new();
+    let mut found  = Vec::new();
     let mut walker = WalkDir::new(root)
         .max_depth(6)
         .follow_links(false)
@@ -163,7 +153,7 @@ fn scan_single_path(root: &Path) -> Vec<ScannedPlugin> {
 
     while let Some(entry) = walker.next() {
         let entry = match entry {
-            Ok(e) => e,
+            Ok(e)  => e,
             Err(_) => continue,
         };
 
@@ -175,27 +165,23 @@ fn scan_single_path(root: &Path) -> Vec<ScannedPlugin> {
 
         if is_shell_plugin(path) {
             log::info!("[plugins] Filtrado (shell): {}", path.display());
-
-            // Si es bundle/carpeta shell, no descender dentro
             if entry.file_type().is_dir() {
                 walker.skip_current_dir();
             }
-
             continue;
         }
 
         found.push(build_plugin_entry(path));
 
-        // Si encontramos una carpeta .vst3 (bundle), la registramos
-        // y NO descendemos dentro.
+        // Bundle → no descender dentro
         if entry.file_type().is_dir() {
             walker.skip_current_dir();
         }
     }
 
-    // Lo dejamos como red de seguridad extra.
     dedupe_bundles(found)
 }
+
 /// Elimina entradas duplicadas cuando un archivo .vst3 está DENTRO
 /// de un bundle .vst3 ya registrado.
 fn dedupe_bundles(mut plugins: Vec<ScannedPlugin>) -> Vec<ScannedPlugin> {
@@ -253,4 +239,81 @@ pub fn scan_vst_plugins(paths: Vec<String>) -> Vec<ScannedPlugin> {
 
     log::info!("[plugins] Scan completo: {} plugins totales", all_found.len());
     all_found
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 🧪 TESTS
+// ═══════════════════════════════════════════════════════════════
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn id_format_contains_vst3_prefix_and_path() {
+        // El id debe empezar con "vst3:" seguido del path
+        // para que el frontend pueda extraer el bundle path.
+        let path = Path::new("C:\\Program Files\\Common Files\\VST3\\Auxfeed.vst3");
+        let plugin = build_plugin_entry(path);
+
+        assert!(
+            plugin.id.starts_with("vst3:"),
+            "El id debe empezar con 'vst3:'. Got: {}",
+            plugin.id
+        );
+
+        let extracted = &plugin.id["vst3:".len()..];
+        assert_eq!(
+            extracted,
+            plugin.path,
+            "El path extraído del id debe coincidir con plugin.path"
+        );
+    }
+
+    #[test]
+    fn id_format_name_matches_filestem() {
+        let path = Path::new("C:\\VST3\\MyPlugin.vst3");
+        let plugin = build_plugin_entry(path);
+        assert_eq!(plugin.name, "MyPlugin");
+        assert_eq!(plugin.format, "vst3");
+    }
+
+    #[test]
+    fn shell_plugin_is_filtered() {
+        let path = Path::new("C:\\VST3\\WaveShell1-VST3 14.0_x64.vst3");
+        assert!(is_shell_plugin(path));
+    }
+
+    #[test]
+    fn normal_plugin_is_not_filtered() {
+        let path = Path::new("C:\\VST3\\Auxfeed.vst3");
+        assert!(!is_shell_plugin(path));
+    }
+
+    #[test]
+    fn dedupe_removes_child_inside_bundle() {
+        let bundle = ScannedPlugin {
+            id:        "vst3:C:\\VST3\\Foo.vst3".to_string(),
+            name:      "Foo".to_string(),
+            vendor:    "X".to_string(),
+            category:  "other".to_string(),
+            format:    "vst3".to_string(),
+            version:   "1.0".to_string(),
+            path:      "C:\\VST3\\Foo.vst3".to_string(),
+            available: true,
+        };
+        let child = ScannedPlugin {
+            id:        "vst3:C:\\VST3\\Foo.vst3\\Contents\\x86_64-win\\Foo.vst3".to_string(),
+            name:      "Foo".to_string(),
+            vendor:    "X".to_string(),
+            category:  "other".to_string(),
+            format:    "vst3".to_string(),
+            version:   "1.0".to_string(),
+            path:      "C:\\VST3\\Foo.vst3\\Contents\\x86_64-win\\Foo.vst3".to_string(),
+            available: true,
+        };
+
+        let deduped = dedupe_bundles(vec![bundle, child]);
+        assert_eq!(deduped.len(), 1, "El child dentro del bundle debe eliminarse");
+    }
 }
