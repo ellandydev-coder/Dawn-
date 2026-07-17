@@ -1,12 +1,14 @@
 // src/features/fx-browser/components/FxBrowserSidebar.tsx
 
 import { memo, useMemo } from 'react';
+import { useSelector } from 'react-redux';
 import {
   FX_PLUGIN_CATEGORIES,
   FX_PLUGIN_CATEGORY_LABELS,
   type FxPluginCategory,
 } from '@domain/enums/FxPluginCategory';
 import { FxCatalog } from '@services/fx-catalog/FxCatalog';
+import type { RootState } from '@state/store';
 import type { CategoryFilter } from '../hooks/useFxBrowser';
 
 // ═══════════════════════════════════════════════════════════════
@@ -22,13 +24,12 @@ export interface FxBrowserSidebarProps {
 // 🎯 CONSTANTES
 // ═══════════════════════════════════════════════════════════════
 
-/** Etiquetas de los grupos superiores (fuera de "Categories") */
 const TOP_ENTRIES: ReadonlyArray<{
   key: CategoryFilter;
   label: string;
   hint?: string;
 }> = [
-  { key: 'all',    label: 'All Plugins' },
+  { key: 'all', label: 'All Plugins' },
   { key: 'recent', label: 'Recently used', hint: '(próximamente)' },
 ];
 
@@ -36,31 +37,29 @@ const TOP_ENTRIES: ReadonlyArray<{
 // 🏗️ COMPONENTE
 // ═══════════════════════════════════════════════════════════════
 
-/**
- * FxBrowserSidebar
- * ----------------
- * Panel izquierdo del FX Browser con dos secciones:
- *
- *   1. Grupos superiores (All / Recent)
- *   2. Categorías (EQ, Dynamics, Reverb, ...)
- *
- * Cada categoría muestra su nombre + count de plugins.
- * El click cambia el filtro activo en el hook padre.
- */
 function FxBrowserSidebarBase({
   selectedCategory,
   onSelectCategory,
 }: FxBrowserSidebarProps) {
-  // Conteo de plugins por categoría (una sola vez por render)
+  // ⚠️ Reactividad: observamos el scan para recalcular counts cuando
+  // se registran plugins nuevos.
+  const scanFoundIds = useSelector(
+    (state: RootState) => state.pluginScan.foundIds
+  );
+
   const categoryCounts = useMemo(() => {
+    void scanFoundIds; // trigger de reactividad
     const counts: Record<string, number> = {};
     for (const cat of FX_PLUGIN_CATEGORIES) {
       counts[cat] = FxCatalog.getByCategory(cat).length;
     }
     return counts;
-  }, []);
+  }, [scanFoundIds]);
 
-  const totalCount = useMemo(() => FxCatalog.getAll().length, []);
+  const totalCount = useMemo(() => {
+    void scanFoundIds;
+    return FxCatalog.getAll().length;
+  }, [scanFoundIds]);
 
   return (
     <aside
@@ -74,7 +73,7 @@ function FxBrowserSidebarBase({
         <ul className="fx-browser-sidebar-list" role="listbox">
           {TOP_ENTRIES.map((entry) => {
             const isSelected = selectedCategory === entry.key;
-            const isDisabled = entry.key === 'recent'; // futuro
+            const isDisabled = entry.key === 'recent';
 
             return (
               <li key={entry.key}>

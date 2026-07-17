@@ -2,27 +2,29 @@
 //
 // Escaneo de plugins VST del filesystem.
 //
-// ── ESTADO ACTUAL (Hito B — Walking Skeleton) ──
-// Devuelve solo `name` (filename) + `path`. El resto de campos
-// son placeholders. Para metadatos reales (vendor, category,
-// version) ver Hito C — parsing VST3 SDK.
+// ── ESTADO ACTUAL (Hito C — Lote 2) ──
+// Aplica heurística de metadatos (vendor por carpeta + category por keywords).
+// Los plugins ya no son "Unknown/other" genéricos — reciben vendor real
+// y categoría según su nombre.
 //
 // ── COMPORTAMIENTO ──
 // • Recorre las rutas dadas recursivamente
-// • Filtra archivos y carpetas con extensión .vst3
-// • Si no se pasan rutas, usa las por defecto de Windows
-// • Ignora rutas inexistentes silenciosamente (no aborta el scan)
+// • Cuando encuentra carpeta .vst3, la registra y NO desciende (bundle atómico)
+// • Cuando encuentra archivo .vst3, lo registra
+// • Filtra "WaveShell*" (case-insensitive)
+// • Aplica heurística de metadatos via `metadata::detect_metadata`
+// • Si no se pasan rutas, usa las por defecto del OS
 
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
+use crate::metadata;
+
 // ═══════════════════════════════════════════════════════════════
 // 🎯 TIPOS
 // ═══════════════════════════════════════════════════════════════
 
-/// Plugin descubierto por el scanner.
-/// Espejo del tipo `ScannedPlugin` en TypeScript.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScannedPlugin {
     pub id: String,
@@ -36,11 +38,9 @@ pub struct ScannedPlugin {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 🎯 RUTAS POR DEFECTO (Windows)
+// 🎯 RUTAS POR DEFECTO
 // ═══════════════════════════════════════════════════════════════
 
-/// Rutas típicas donde Windows guarda VST3 según el estándar.
-/// Se usan cuando el usuario NO ha configurado `pluginPaths`.
 #[cfg(target_os = "windows")]
 fn default_vst3_paths() -> Vec<PathBuf> {
     vec![
@@ -53,9 +53,7 @@ fn default_vst3_paths() -> Vec<PathBuf> {
 
 #[cfg(target_os = "macos")]
 fn default_vst3_paths() -> Vec<PathBuf> {
-    let mut paths = vec![
-        PathBuf::from("/Library/Audio/Plug-Ins/VST3"),
-    ];
+    let mut paths = vec![PathBuf::from("/Library/Audio/Plug-Ins/VST3")];
     if let Some(home) = std::env::var_os("HOME") {
         paths.push(PathBuf::from(home).join("Library/Audio/Plug-Ins/VST3"));
     }
@@ -75,13 +73,29 @@ fn default_vst3_paths() -> Vec<PathBuf> {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// 🎯 FILTROS
+// ═══════════════════════════════════════════════════════════════
+
+const SHELL_PREFIXES: &[&str] = &["waveshell"];
+
+fn is_shell_plugin(path: &Path) -> bool {
+    let filename = match path.file_stem().and_then(|s| s.to_str()) {
+        Some(name) => name.to_lowercase(),
+        None => return false,
+    };
+
+    SHELL_PREFIXES
+        .iter()
+        .any(|prefix| filename.starts_with(prefix))
+}
+
+// ═══════════════════════════════════════════════════════════════
 // 🎯 HELPERS
 // ═══════════════════════════════════════════════════════════════
 
-/// Convierte un nombre de plugin a un slug apto para id.
-/// "SSL E-Channel.vst3" → "ssl-e-channel"
-fn slugify(name: &str) -> String {
-    name.to_lowercase()
+/// Convierte un texto a un slug apto para id.
+fn slugify(text: &str) -> String {
+    text.to_lowercase()
         .chars()
         .map(|c| {
             if c.is_alphanumeric() {
@@ -99,8 +113,6 @@ fn slugify(name: &str) -> String {
         .join("-")
 }
 
-/// Extrae el nombre limpio del plugin desde su path.
-/// "C:\\Plugins\\Serum.vst3" → "Serum"
 fn extract_name(path: &Path) -> String {
     path.file_stem()
         .and_then(|s| s.to_str())
@@ -108,26 +120,29 @@ fn extract_name(path: &Path) -> String {
         .to_string()
 }
 
-/// Crea un `ScannedPlugin` a partir de un path .vst3.
+/// Crea un `ScannedPlugin` aplicando heurística de metadatos.
 fn build_plugin_entry(path: &Path) -> ScannedPlugin {
     let name = extract_name(path);
-    let slug = slugify(&name);
+    let meta = metadata::detect_metadata(path, &name);
+
     let path_str = path.to_string_lossy().into_owned();
 
+    let vendor_slug = slugify(&meta.vendor);
+    let name_slug = slugify(&name);
+    let id = format!("vst3.{}.{}", vendor_slug, name_slug);
+
     ScannedPlugin {
-        id: format!("vst3.unknown.{}", slug),
+        id,
         name,
-        vendor: "Unknown".to_string(),
-        category: "utility".to_string(),
+        vendor: meta.vendor,
+        category: meta.category,
         format: "vst3".to_string(),
-        version: "0.0.0".to_string(),
+        version: meta.version,  // ← CAMBIO: era "0.0.0", ahora usa meta.version
         path: path_str,
         available: true,
     }
 }
 
-/// ¿La entrada del filesystem es un plugin VST3?
-/// Puede ser archivo .vst3 (single-file) o carpeta .vst3 (bundle).
 fn is_vst3_entry(path: &Path) -> bool {
     path.extension()
         .and_then(|s| s.to_str())
@@ -135,53 +150,82 @@ fn is_vst3_entry(path: &Path) -> bool {
         .unwrap_or(false)
 }
 
-/// Escanea una sola ruta y devuelve los VST3 encontrados.
-/// Si la ruta no existe, devuelve array vacío (no es error).
 fn scan_single_path(root: &Path) -> Vec<ScannedPlugin> {
     if !root.exists() {
         return Vec::new();
     }
 
     let mut found = Vec::new();
-
-    // Recorrido recursivo con límite de profundidad razonable
-    // para evitar loops infinitos en filesystems raros
-    for entry in WalkDir::new(root)
+    let mut walker = WalkDir::new(root)
         .max_depth(6)
         .follow_links(false)
-        .into_iter()
-        .filter_map(Result::ok)
-    {
-        let path = entry.path();
-        if is_vst3_entry(path) {
-            found.push(build_plugin_entry(path));
+        .into_iter();
 
-            // Si es una carpeta .vst3 (bundle), no descendemos más
-            // dentro de ella — el bundle es una unidad atómica
-            if path.is_dir() {
-                // WalkDir no permite skip_current_dir aquí en este scope,
-                // así que confiamos en max_depth para acotar
+    while let Some(entry) = walker.next() {
+        let entry = match entry {
+            Ok(e) => e,
+            Err(_) => continue,
+        };
+
+        let path = entry.path();
+
+        if !is_vst3_entry(path) {
+            continue;
+        }
+
+        if is_shell_plugin(path) {
+            log::info!("[plugins] Filtrado (shell): {}", path.display());
+
+            // Si es bundle/carpeta shell, no descender dentro
+            if entry.file_type().is_dir() {
+                walker.skip_current_dir();
             }
+
+            continue;
+        }
+
+        found.push(build_plugin_entry(path));
+
+        // Si encontramos una carpeta .vst3 (bundle), la registramos
+        // y NO descendemos dentro.
+        if entry.file_type().is_dir() {
+            walker.skip_current_dir();
         }
     }
 
-    found
+    // Lo dejamos como red de seguridad extra.
+    dedupe_bundles(found)
+}
+/// Elimina entradas duplicadas cuando un archivo .vst3 está DENTRO
+/// de un bundle .vst3 ya registrado.
+fn dedupe_bundles(mut plugins: Vec<ScannedPlugin>) -> Vec<ScannedPlugin> {
+    plugins.sort_by(|a, b| a.path.cmp(&b.path));
+
+    let mut result: Vec<ScannedPlugin> = Vec::with_capacity(plugins.len());
+    for plugin in plugins {
+        let is_child_of_bundle = result.iter().any(|existing| {
+            plugin.path.starts_with(&existing.path)
+                && plugin.path.len() > existing.path.len()
+                && plugin
+                    .path
+                    .as_bytes()
+                    .get(existing.path.len())
+                    .map(|&b| b == b'/' || b == b'\\')
+                    .unwrap_or(false)
+        });
+
+        if !is_child_of_bundle {
+            result.push(plugin);
+        }
+    }
+
+    result
 }
 
 // ═══════════════════════════════════════════════════════════════
 // 🎯 COMANDO TAURI
 // ═══════════════════════════════════════════════════════════════
 
-/// Escanea rutas del filesystem buscando plugins VST3.
-///
-/// # Argumentos
-/// - `paths`: Lista de rutas absolutas a escanear. Si está vacía,
-///   se usan las rutas por defecto del sistema operativo.
-///
-/// # Retorna
-/// Lista de plugins encontrados. Ids duplicados son posibles si
-/// hay dos archivos con el mismo filename en carpetas distintas —
-/// la deduplicación se hace en TypeScript.
 #[tauri::command]
 pub fn scan_vst_plugins(paths: Vec<String>) -> Vec<ScannedPlugin> {
     let paths_to_scan: Vec<PathBuf> = if paths.is_empty() {

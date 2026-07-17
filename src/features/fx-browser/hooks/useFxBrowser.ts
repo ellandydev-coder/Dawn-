@@ -1,7 +1,9 @@
 // src/features/fx-browser/hooks/useFxBrowser.ts
 
 import { useCallback, useMemo, useState } from 'react';
+import { useSelector } from 'react-redux';
 import { FxCatalog } from '@services/fx-catalog/FxCatalog';
+import type { RootState } from '@state/store';
 import type { FxPluginInfo } from '@domain/models/FxPluginInfo';
 import type { FxPluginCategory } from '@domain/enums/FxPluginCategory';
 
@@ -9,36 +11,21 @@ import type { FxPluginCategory } from '@domain/enums/FxPluginCategory';
 // 🎯 TIPOS
 // ═══════════════════════════════════════════════════════════════
 
-/**
- * Filtro de categoría en el sidebar.
- * - 'all'          → mostrar todos los plugins
- * - 'recent'       → mostrar recientemente usados (futuro)
- * - FxPluginCategory → categoría específica ('eq', 'reverb', etc.)
- */
 export type CategoryFilter = 'all' | 'recent' | FxPluginCategory;
 
 export interface UseFxBrowserResult {
-  /** Texto actual del filtro de búsqueda */
   filterText: string;
-  /** Actualiza el filtro de búsqueda */
   setFilterText: (text: string) => void;
-  /** Limpia el filtro */
   clearFilter: () => void;
 
-  /** Categoría actualmente seleccionada en el sidebar */
   selectedCategory: CategoryFilter;
-  /** Cambia la categoría seleccionada */
   setSelectedCategory: (cat: CategoryFilter) => void;
 
-  /** Plugin actualmente seleccionado en la lista (null = ninguno) */
   selectedPluginId: string | null;
-  /** Selecciona un plugin */
   setSelectedPluginId: (id: string | null) => void;
 
-  /** Lista filtrada según categoría + búsqueda */
   filteredPlugins: readonly FxPluginInfo[];
 
-  /** Reset completo (filtros + selección) — útil al cerrar/reabrir */
   reset: () => void;
 }
 
@@ -51,10 +38,12 @@ export interface UseFxBrowserResult {
  * ------------
  * Hook que encapsula la lógica de filtrado y selección del FX Browser.
  *
- * Estado interno (NO en Redux — es UI puramente local del modal):
- *   • filtro de texto
- *   • categoría seleccionada
- *   • plugin seleccionado
+ * ⚠️ REACTIVIDAD:
+ * El `FxCatalog` es un singleton mutable fuera de React. Para que
+ * los cambios (nuevos plugins registrados tras un scan) se reflejen
+ * en la UI, este hook OBSERVA `pluginScan.foundIds` desde Redux.
+ * Cada vez que ese array cambia (después de un scan), el useMemo
+ * se recalcula leyendo el estado actualizado del FxCatalog.
  */
 export function useFxBrowser(): UseFxBrowserResult {
   const [filterText, setFilterTextInternal] = useState('');
@@ -64,11 +53,16 @@ export function useFxBrowser(): UseFxBrowserResult {
     string | null
   >(null);
 
+  // ─── Suscripción reactiva al scan ────────────────────────────
+  // Cuando termina un escaneo, `foundIds` cambia y forzamos re-render.
+  const scanFoundIds = useSelector(
+    (state: RootState) => state.pluginScan.foundIds
+  );
+
   // ─── Setters estables ───────────────────────────────────────
 
   const setFilterText = useCallback((text: string) => {
     setFilterTextInternal(text);
-    // Al cambiar el filtro, deseleccionamos plugin
     setSelectedPluginIdInternal(null);
   }, []);
 
@@ -79,7 +73,6 @@ export function useFxBrowser(): UseFxBrowserResult {
 
   const setSelectedCategory = useCallback((cat: CategoryFilter) => {
     setSelectedCategoryInternal(cat);
-    // Al cambiar categoría, deseleccionamos plugin
     setSelectedPluginIdInternal(null);
   }, []);
 
@@ -96,19 +89,19 @@ export function useFxBrowser(): UseFxBrowserResult {
   // ─── Lista filtrada ─────────────────────────────────────────
 
   const filteredPlugins = useMemo<readonly FxPluginInfo[]>(() => {
-    // Paso 1: filtrar por categoría
+    // El `scanFoundIds` en las deps fuerza recomputar cuando llegan VST3 nuevos
+    void scanFoundIds;
+
     let base: readonly FxPluginInfo[];
 
     if (selectedCategory === 'all') {
       base = FxCatalog.getAll();
     } else if (selectedCategory === 'recent') {
-      // TODO: cuando implementemos "recently used" en Redux
       base = [];
     } else {
       base = FxCatalog.getByCategory(selectedCategory);
     }
 
-    // Paso 2: filtrar por texto (si hay)
     const trimmed = filterText.trim().toLowerCase();
     if (trimmed.length === 0) return base;
 
@@ -116,7 +109,7 @@ export function useFxBrowser(): UseFxBrowserResult {
       const haystack = `${p.name} ${p.vendor} ${p.description}`.toLowerCase();
       return haystack.includes(trimmed);
     });
-  }, [selectedCategory, filterText]);
+  }, [selectedCategory, filterText, scanFoundIds]);
 
   return {
     filterText,

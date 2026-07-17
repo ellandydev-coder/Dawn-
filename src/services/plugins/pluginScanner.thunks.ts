@@ -89,7 +89,9 @@ export const startPluginScan = createAsyncThunk<
 
   console.info(
     `[pluginScan] Iniciando escaneo de ${paths.length} ruta(s): ${
-      paths.join(', ') || '(sin rutas, usando mock)'
+      paths.length > 0
+        ? paths.join(', ')
+        : '(sin rutas configuradas — el backend usará rutas del OS)'
     }`
   );
 
