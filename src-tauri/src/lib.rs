@@ -2,6 +2,7 @@ mod ffi;
 mod moduleinfo;
 mod metadata;
 mod plugins;
+mod vst3_host;
 
 #[tauri::command]
 fn sumar(a: i32, b: i32) -> i32 {
@@ -29,7 +30,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             sumar,
             saludar,
-            plugins::scan_vst_plugins
+            plugins::scan_vst_plugins,
+            vst3_host::vst3_probe_plugin
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
