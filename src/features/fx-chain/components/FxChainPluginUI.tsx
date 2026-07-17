@@ -1,12 +1,8 @@
 // src/features/fx-chain/components/FxChainPluginUI.tsx
 
-import { memo, useEffect, useState, useCallback, useRef } from 'react';
+import { memo, useEffect, useState, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import type { FxPluginInstance } from '@domain/models/FxPluginInstance';
-
-// ═══════════════════════════════════════════════════════════════
-// 🎯 TIPOS
-// ═══════════════════════════════════════════════════════════════
 
 export interface FxChainPluginUIProps {
   instance: FxPluginInstance | null;
@@ -35,10 +31,6 @@ type ProbeState =
   | { status: 'ok';    data: ProbeResult }
   | { status: 'error'; message: string };
 
-// ═══════════════════════════════════════════════════════════════
-// 🛠️ HELPERS
-// ═══════════════════════════════════════════════════════════════
-
 function isVst3Plugin(pluginId: string): boolean {
   return pluginId.startsWith('vst3:');
 }
@@ -61,10 +53,6 @@ function categoryShort(category: string): string {
   if (category.includes('Compatibility')) return 'Compat';
   return category.slice(0, 8);
 }
-
-// ═══════════════════════════════════════════════════════════════
-// 🏗️ SUB-COMPONENTES
-// ═══════════════════════════════════════════════════════════════
 
 function Vst3ClassTable({ classes }: { classes: Vst3ClassInfo[] }) {
   if (classes.length === 0) {
@@ -114,22 +102,12 @@ function Vst3ProbePanel({ data }: { data: ProbeResult }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// 🏗️ COMPONENTE PRINCIPAL
-// ═══════════════════════════════════════════════════════════════
-
 function FxChainPluginUIBase({ instance }: FxChainPluginUIProps) {
-  // Guardamos el pluginId que corresponde al probe actual.
-  // Si difiere del instance.pluginId actual → mostramos idle.
   const [probedPluginId, setProbedPluginId] = useState<string | null>(null);
   const [probe, setProbe] = useState<ProbeState>({ status: 'idle' });
-
-  // Ref para cancelar probes en vuelo si cambia el plugin antes
-  // de que la respuesta llegue.
   const abortRef = useRef<boolean>(false);
 
   useEffect(() => {
-    // Nada que hacer si no hay instancia o no es VST3
     if (!instance || !isVst3Plugin(instance.pluginId)) {
       return;
     }
@@ -137,17 +115,12 @@ function FxChainPluginUIBase({ instance }: FxChainPluginUIProps) {
     const pluginId   = instance.pluginId;
     const bundlePath = extractBundlePath(pluginId);
 
-    // Marcar el probe anterior como cancelado
     abortRef.current = true;
-    const abortFlag  = { cancelled: false };
     abortRef.current = false;
 
-    // Lanzar probe async — sin setState síncrono en el cuerpo del effect
     let mounted = true;
 
     const run = async () => {
-      // Pequeño tick para que React termine el render actual
-      // antes de que empecemos a cambiar estado.
       await Promise.resolve();
       if (!mounted) return;
 
@@ -172,13 +145,10 @@ function FxChainPluginUIBase({ instance }: FxChainPluginUIProps) {
     void run();
 
     return () => {
-      // Cleanup: si el componente se desmonta o cambia el plugin
-      // antes de que termine el probe, ignoramos la respuesta.
       mounted = false;
     };
   }, [instance?.pluginId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── Estado vacío (sin instancia seleccionada) ────────────
   if (!instance) {
     return (
       <div className="fxchain-plugin-ui fxchain-plugin-ui--empty">
@@ -190,13 +160,8 @@ function FxChainPluginUIBase({ instance }: FxChainPluginUIProps) {
     );
   }
 
-  // ─── ¿El probe en memoria corresponde a este plugin? ─────
-  // Si cambiamos de plugin rápido, puede que probe.status sea
-  // 'ok' pero con datos del plugin anterior. Mostramos loading
-  // hasta que el pluginId coincida.
   const probeIsStale = probedPluginId !== instance.pluginId;
 
-  // ─── Plugin seleccionado ──────────────────────────────────
   return (
     <div className="fxchain-plugin-ui">
       <div className="fxchain-plugin-ui__header">
@@ -212,7 +177,6 @@ function FxChainPluginUIBase({ instance }: FxChainPluginUIProps) {
 
       <div className="fxchain-plugin-ui__body fxchain-plugin-ui__body--scroll">
 
-        {/* ── Built-in ──────────────────────────────────── */}
         {!isVst3Plugin(instance.pluginId) && (
           <div className="fxchain-plugin-ui__placeholder">
             <span className="fxchain-plugin-ui__icon">🔧</span>
@@ -232,10 +196,8 @@ function FxChainPluginUIBase({ instance }: FxChainPluginUIProps) {
           </div>
         )}
 
-        {/* ── VST3 ──────────────────────────────────────── */}
         {isVst3Plugin(instance.pluginId) && (
           <>
-            {/* Loading: probe en vuelo O datos de otro plugin */}
             {(probe.status === 'loading' || probeIsStale) && (
               <div className="fxchain-plugin-ui__placeholder">
                 <span className="fxchain-plugin-ui__icon vst3-probe__spinner">
@@ -245,7 +207,6 @@ function FxChainPluginUIBase({ instance }: FxChainPluginUIProps) {
               </div>
             )}
 
-            {/* Error */}
             {probe.status === 'error' && !probeIsStale && (
               <div className="fxchain-plugin-ui__placeholder">
                 <span className="fxchain-plugin-ui__icon">❌</span>
@@ -254,13 +215,39 @@ function FxChainPluginUIBase({ instance }: FxChainPluginUIProps) {
               </div>
             )}
 
-            {/* Resultado OK */}
             {probe.status === 'ok' && !probeIsStale && (
-              <Vst3ProbePanel data={probe.data} />
+              <>
+                <Vst3ProbePanel data={probe.data} />
+                <Vst3OpenEditorButton
+                  bundlePath={extractBundlePath(instance.pluginId)}
+                  pluginName={instance.displayName}
+                />
+              </>
             )}
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+// ── Botón abrir editor integrado ───────────────────────────────
+
+import { Vst3PluginWindow } from './Vst3PluginWindow';
+
+function Vst3OpenEditorButton({
+  bundlePath,
+  pluginName,
+}: {
+  bundlePath: string;
+  pluginName: string;
+}) {
+  return (
+    <div style={{ marginTop: '12px' }}>
+      <Vst3PluginWindow
+        bundlePath={bundlePath}
+        pluginName={pluginName}
+      />
     </div>
   );
 }
