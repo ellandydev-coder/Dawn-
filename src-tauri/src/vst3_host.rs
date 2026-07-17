@@ -2,18 +2,20 @@
 //
 // VST3 Host Bridge
 //
-// ── ESTADO ACTUAL (Paso 2.3) ──
+// ── ESTADO ACTUAL (Sub-paso 2.5.c) ──
 // ✅ Resolver DLL real dentro del bundle .vst3
 // ✅ LoadLibraryW del DLL
 // ✅ GetPluginFactory() → puntero
 // ✅ Layout COM en vst3_com/
 // ✅ probe (efímero) + load/unload (persistente)
-// ✅ Drop de LoadedPlugin libera todo en orden correcto (Paso 2.3)
-// ✅ createInstance vía COM vtable                    ← Paso 2.3
-// ✅ Registro de instancias en LoadedPlugin.instances ← Paso 2.3
-// ✅ Comandos: vst3_create_instance / release / list  ← Paso 2.3
-// ⬜ Host context (IHostApplication)                  [Paso 2.4]
-// ⬜ initialize / terminate                           [Paso 2.5]
+// ✅ Drop de LoadedPlugin libera todo en orden correcto
+// ✅ createInstance vía COM vtable
+// ✅ Registro de instancias en LoadedPlugin.instances
+// ✅ Comandos: vst3_create_instance / release / list
+// ✅ ComponentInstance::teardown() ordenado             ← 2.5.b
+// ✅ InstanceInfo expone initialized + plugin_base_ptr ← 2.5.b
+// ✅ Comandos initialize / terminate con DawnHost       ← 2.5.c
+// ⬜ Ventana nativa del plugin (HWND)                   [Fase 3]
 
 use std::path::{Path, PathBuf};
 use tauri::State;
@@ -69,12 +71,26 @@ pub struct LoadResult {
 pub struct CreateInstanceResult {
     pub success: bool,
     pub message: String,
-    /// ID para operaciones futuras (release, etc). Null si falló.
+    /// ID para operaciones futuras (initialize, release, etc). Null si falló.
     pub instance_id: Option<InstanceId>,
     /// Puntero al IComponent (hex, para debug). Null si falló.
     pub component_ptr: Option<String>,
     /// CID de la clase instanciada
     pub class_cid: String,
+}
+
+/// Resultado de vst3_initialize_instance (Sub-paso 2.5.c).
+#[derive(Debug, serde::Serialize)]
+pub struct InitializeResult {
+    pub success: bool,
+    pub message: String,
+    /// HRESULT del initialize() del plugin (0 = S_OK)
+    pub hresult: i32,
+    /// Puntero al IPluginBase obtenido via queryInterface (hex).
+    /// Null si initialize falló.
+    pub plugin_base_ptr: Option<String>,
+    /// Puntero al DawnHost que le pasamos (hex, para debug)
+    pub host_context_ptr: Option<String>,
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -432,11 +448,9 @@ pub fn vst3_load_plugin(
 ///
 /// Cuando `take()` devuelve el LoadedPlugin y sale del scope, su
 /// Drop se ejecuta automáticamente y libera:
-///   1. Todas las instancias (release COM)
+///   1. Todas las instancias (teardown ordenado)
 ///   2. El factory (release COM)
 ///   3. El DLL (FreeLibrary)
-///
-/// Ya no llamamos free_hmodule manualmente — lo hace el Drop.
 #[tauri::command]
 pub fn vst3_unload_plugin(
     plugin_key: String,
@@ -493,14 +507,12 @@ pub fn vst3_list_loaded(registry: State<'_, Vst3Registry>) -> Vec<String> {
 /// típicamente una con category = "Audio Module Class". El frontend
 /// lo obtiene de `LoadResult.classes[N].cid`.
 ///
-/// La instancia queda REGISTRADA en el plugin. El unload del plugin
-/// libera automáticamente todas las instancias. También se puede
-/// liberar manualmente con `vst3_release_instance`.
+/// La instancia queda REGISTRADA en el plugin con estado
+/// `initialized=false`. Para "arrancarla" hay que llamar
+/// `vst3_initialize_instance` (Sub-paso 2.5.c).
 ///
-/// ⚠️ NOTA (Paso 2.3): esto NO llama `initialize()` en el componente.
-/// Eso llegará en Paso 2.5 cuando tengamos host context. Por ahora
-/// solo verificamos que podemos crear el objeto — el plugin ya
-/// ejecutó su constructor, pero no está "vivo" aún.
+/// El unload del plugin libera automáticamente todas las instancias.
+/// También se puede liberar manualmente con `vst3_release_instance`.
 #[tauri::command]
 pub fn vst3_create_instance(
     plugin_key: String,
@@ -575,15 +587,14 @@ pub fn vst3_create_instance(
         let component_hex  = format!("0x{:016x}", component_addr);
 
         // ── 4. Registrar la instancia en el plugin ──────────
+        // ← 2.5.b: usa ComponentInstance::new() que inicializa
+        //   initialized=false y plugin_base_ptr=0 correctamente.
         let instance_id = make_instance_id();
 
         let register_result = registry.with_plugin_mut(&plugin_key, |p| {
             p.instances.insert(
                 instance_id.clone(),
-                ComponentInstance {
-                    component_ptr: component_addr,
-                    class_cid:     class_cid.clone(),
-                },
+                ComponentInstance::new(component_addr, class_cid.clone()),
             );
             p.instances.len()
         });
@@ -609,7 +620,7 @@ pub fn vst3_create_instance(
 
         CreateInstanceResult {
             success: true,
-            message: "Instancia creada".to_string(),
+            message: "Instancia creada (no inicializada aún)".to_string(),
             instance_id:   Some(instance_id),
             component_ptr: Some(component_hex),
             class_cid,
@@ -628,14 +639,16 @@ pub fn vst3_create_instance(
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 🎯 COMANDO — vst3_release_instance (Paso 2.3)
+// 🎯 COMANDO — vst3_release_instance (Paso 2.3, actualizado 2.5.b)
 // ═══════════════════════════════════════════════════════════════
 
 /// Libera una instancia específica del plugin.
 ///
-/// La instancia se quita del HashMap y su ComponentInstance se drop.
-/// Como el drop ocurre naturalmente al salir del scope de `remove()`,
-/// llamamos `release()` explícitamente aquí para el logging.
+/// ← 2.5.b: usa `ComponentInstance::teardown()` que hace el ciclo
+/// completo en orden correcto:
+///   1. Si initialized: llamar terminate()
+///   2. Si plugin_base_ptr != 0: release()
+///   3. release() del component_ptr
 #[tauri::command]
 pub fn vst3_release_instance(
     plugin_key:  String,
@@ -654,17 +667,9 @@ pub fn vst3_release_instance(
         }).flatten();
 
         match removed {
-            Some(inst) => {
-                if inst.component_ptr != 0 {
-                    unsafe {
-                        use crate::vst3_com::funknown;
-                        let refcount = funknown::release(inst.component_ptr as *mut _);
-                        log::info!(
-                            "[vst3_host] ✅ Instance released → refcount={}",
-                            refcount
-                        );
-                    }
-                }
+            Some(mut inst) => {
+                unsafe { inst.teardown(); }
+                log::info!("[vst3_host] ✅ Instance liberada (teardown completo)");
                 true
             }
             None => {
@@ -682,10 +687,13 @@ pub fn vst3_release_instance(
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 🎯 COMANDO — vst3_list_instances (Paso 2.3)
+// 🎯 COMANDO — vst3_list_instances (Paso 2.3, actualizado 2.5.b)
 // ═══════════════════════════════════════════════════════════════
 
 /// Lista las instancias vivas de un plugin.
+///
+/// ← 2.5.b: usa `ComponentInstance::to_info()` que incluye
+/// initialized + plugin_base_ptr en el output.
 #[tauri::command]
 pub fn vst3_list_instances(
     plugin_key: String,
@@ -696,11 +704,7 @@ pub fn vst3_list_instances(
         registry.with_plugin(&plugin_key, |p| {
             p.instances
                 .iter()
-                .map(|(id, inst)| InstanceInfo {
-                    instance_id:   id.clone(),
-                    class_cid:     inst.class_cid.clone(),
-                    component_ptr: format!("0x{:016x}", inst.component_ptr),
-                })
+                .map(|(id, inst)| inst.to_info(id))
                 .collect()
         }).unwrap_or_default()
     }
@@ -709,6 +713,281 @@ pub fn vst3_list_instances(
     {
         let _ = (plugin_key, registry);
         Vec::new()
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 🎯 COMANDO — vst3_initialize_instance (Sub-paso 2.5.c)
+// ═══════════════════════════════════════════════════════════════
+
+/// Inicializa una instancia previamente creada.
+///
+/// Secuencia:
+///   1. Verifica que la instancia existe y NO está ya inicializada
+///   2. queryInterface(component, IID_IPLUGIN_BASE) → plugin_base
+///   3. Obtiene DawnHost singleton (host context)
+///   4. plugin_base->initialize(dawn_host)
+///   5. Si S_OK: guarda plugin_base_ptr + marca initialized=true
+///   6. Si error: release(plugin_base), no marca initialized
+///
+/// ⚠️ Este comando invoca CÓDIGO DEL PLUGIN. Un plugin bugueado
+/// puede crashear la app. Rust no puede atrapar SEH exceptions
+/// sin overhead significativo.
+#[tauri::command]
+pub fn vst3_initialize_instance(
+    plugin_key:  String,
+    instance_id: String,
+    registry:    State<'_, Vst3Registry>,
+) -> InitializeResult {
+    log::info!(
+        "[vst3_host] initialize_instance: plugin={} inst={}",
+        plugin_key, instance_id
+    );
+
+    #[cfg(target_os = "windows")]
+    {
+        use crate::vst3_com::{funknown, iplugin_base};
+        use crate::vst3_com::iplugin_base::IID_IPLUGIN_BASE;
+        use crate::vst3_host_context::DawnHost;
+
+        // ── 1. Verificar estado actual + obtener component_ptr ────
+        let component_ptr = match registry.with_plugin(&plugin_key, |p| {
+            p.instances.get(&instance_id).map(|inst| {
+                (inst.component_ptr, inst.initialized)
+            })
+        }).flatten() {
+            Some((ptr, already_init)) => {
+                if already_init {
+                    log::warn!("[vst3_host] initialize: ya estaba inicializada");
+                    return InitializeResult {
+                        success: false,
+                        message: "La instancia ya está inicializada".to_string(),
+                        hresult: 0,
+                        plugin_base_ptr: None,
+                        host_context_ptr: None,
+                    };
+                }
+                if ptr == 0 {
+                    return InitializeResult {
+                        success: false,
+                        message: "component_ptr es NULL".to_string(),
+                        hresult: -1,
+                        plugin_base_ptr: None,
+                        host_context_ptr: None,
+                    };
+                }
+                ptr
+            }
+            None => {
+                return InitializeResult {
+                    success: false,
+                    message: format!(
+                        "Instancia no encontrada: plugin={} inst={}",
+                        plugin_key, instance_id
+                    ),
+                    hresult: -1,
+                    plugin_base_ptr: None,
+                    host_context_ptr: None,
+                };
+            }
+        };
+
+        // ── 2. queryInterface(IID_IPLUGIN_BASE) ──────────────────
+        //
+        // Le pedimos al componente su "cara" IPluginBase. Esto ya
+        // invoca código del plugin (queryInterface está en su vtable).
+        // Si el plugin es sano, retorna un puntero con addRef hecho.
+        let plugin_base_ptr = unsafe {
+            match funknown::query_interface(component_ptr as *mut _, &IID_IPLUGIN_BASE) {
+                Ok(ptr) => ptr,
+                Err(hr) => {
+                    log::error!(
+                        "[vst3_host] queryInterface(IPluginBase) falló: HRESULT=0x{:08X}",
+                        hr as u32
+                    );
+                    return InitializeResult {
+                        success: false,
+                        message: format!(
+                            "El componente no expone IPluginBase (HRESULT=0x{:08X}). \
+                             Plugin bugueado o incompatible.", hr as u32
+                        ),
+                        hresult: hr,
+                        plugin_base_ptr: None,
+                        host_context_ptr: None,
+                    };
+                }
+            }
+        };
+
+        let plugin_base_addr = plugin_base_ptr as usize;
+        log::info!(
+            "[vst3_host]   IPluginBase obtenido: 0x{:016x}",
+            plugin_base_addr
+        );
+
+        // ── 3. Obtener DawnHost singleton ────────────────────────
+        let host_ptr = DawnHost::get_singleton_ptr();
+        let host_addr = host_ptr as usize;
+        log::info!("[vst3_host]   DawnHost host_context: 0x{:016x}", host_addr);
+
+        // ── 4. INITIALIZE — el momento crítico ───────────────────
+        //
+        // Aquí el plugin ejecuta código propio y puede llamar
+        // métodos de nuestro DawnHost (getName, createInstance...).
+        // Si crashea aquí, es en el plugin — no en nuestro código.
+        log::info!("[vst3_host]   → llamando initialize()...");
+        let hr = unsafe {
+            iplugin_base::initialize(plugin_base_ptr, host_ptr)
+        };
+        log::info!(
+            "[vst3_host]   ← initialize() retornó HRESULT=0x{:08X}",
+            hr as u32
+        );
+
+        // ── 5. Manejar resultado ─────────────────────────────────
+        if hr != 0 {
+            // Failure: release el plugin_base_ptr (nos hicieron addRef en QI)
+            log::error!(
+                "[vst3_host] initialize() falló con HRESULT=0x{:08X} — releasing IPluginBase",
+                hr as u32
+            );
+            unsafe {
+                funknown::release(plugin_base_ptr);
+            }
+            return InitializeResult {
+                success: false,
+                message: format!(
+                    "initialize() retornó HRESULT=0x{:08X}. \
+                     El plugin rechazó la inicialización.", hr as u32
+                ),
+                hresult: hr,
+                plugin_base_ptr: None,
+                host_context_ptr: Some(format!("0x{:016x}", host_addr)),
+            };
+        }
+
+        // ── 6. Success: guardar plugin_base_ptr + marcar initialized ─
+        let stored = registry.with_plugin_mut(&plugin_key, |p| {
+            if let Some(inst) = p.instances.get_mut(&instance_id) {
+                inst.plugin_base_ptr = plugin_base_addr;
+                inst.initialized = true;
+                true
+            } else {
+                false
+            }
+        }).unwrap_or(false);
+
+        if !stored {
+            // Race condition: la instancia desapareció durante initialize.
+            // Debemos hacer teardown manual del plugin_base para no leak.
+            log::warn!("[vst3_host] Instancia desaparecida durante initialize — teardown manual");
+            unsafe {
+                let hr_term = iplugin_base::terminate(plugin_base_ptr);
+                log::debug!("[vst3_host]   terminate() → HRESULT=0x{:08X}", hr_term as u32);
+                funknown::release(plugin_base_ptr);
+            }
+            return InitializeResult {
+                success: false,
+                message: "Instancia desapareció durante initialize".to_string(),
+                hresult: 0,
+                plugin_base_ptr: None,
+                host_context_ptr: Some(format!("0x{:016x}", host_addr)),
+            };
+        }
+
+        log::info!(
+            "[vst3_host] ✅ Instance inicializada: {} → plugin_base=0x{:016x}",
+            instance_id, plugin_base_addr
+        );
+
+        InitializeResult {
+            success: true,
+            message: "Instancia inicializada correctamente".to_string(),
+            hresult: 0,
+            plugin_base_ptr:  Some(format!("0x{:016x}", plugin_base_addr)),
+            host_context_ptr: Some(format!("0x{:016x}", host_addr)),
+        }
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = (plugin_key, instance_id, registry);
+        InitializeResult {
+            success: false,
+            message: "initialize solo implementado en Windows".to_string(),
+            hresult: -1,
+            plugin_base_ptr: None,
+            host_context_ptr: None,
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 🎯 COMANDO — vst3_terminate_instance (Sub-paso 2.5.c)
+// ═══════════════════════════════════════════════════════════════
+
+/// Termina una instancia previamente inicializada.
+///
+/// Es el simétrico de `initialize`:
+///   1. Verifica que la instancia existe y ESTÁ inicializada
+///   2. Llama plugin_base->terminate()
+///   3. release(plugin_base)
+///   4. Marca initialized=false, plugin_base_ptr=0
+///
+/// Después de esto, la instancia sigue viva (component_ptr no cambia)
+/// pero en estado "no inicializada". Se puede volver a `initialize`
+/// o `release` completamente.
+#[tauri::command]
+pub fn vst3_terminate_instance(
+    plugin_key:  String,
+    instance_id: String,
+    registry:    State<'_, Vst3Registry>,
+) -> bool {
+    log::info!(
+        "[vst3_host] terminate_instance: plugin={} inst={}",
+        plugin_key, instance_id
+    );
+
+    #[cfg(target_os = "windows")]
+    {
+        use crate::vst3_com::{funknown, iplugin_base};
+
+        // Extraer plugin_base_ptr y marcar como no inicializada atómicamente
+        let plugin_base_ptr = registry.with_plugin_mut(&plugin_key, |p| {
+            let inst = p.instances.get_mut(&instance_id)?;
+            if !inst.initialized || inst.plugin_base_ptr == 0 {
+                return None;
+            }
+            let ptr = inst.plugin_base_ptr;
+            inst.plugin_base_ptr = 0;
+            inst.initialized = false;
+            Some(ptr)
+        }).flatten();
+
+        match plugin_base_ptr {
+            Some(ptr) => {
+                unsafe {
+                    let hr = iplugin_base::terminate(ptr as *mut _);
+                    log::info!("[vst3_host]   terminate() → HRESULT=0x{:08X}", hr as u32);
+                    let refcount = funknown::release(ptr as *mut _);
+                    log::info!("[vst3_host]   IPluginBase released → refcount={}", refcount);
+                }
+                log::info!("[vst3_host] ✅ Instance terminada");
+                true
+            }
+            None => {
+                log::warn!(
+                    "[vst3_host] terminate: instancia no encontrada o no inicializada"
+                );
+                false
+            }
+        }
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = (plugin_key, instance_id, registry);
+        false
     }
 }
 

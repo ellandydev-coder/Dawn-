@@ -3,21 +3,18 @@ mod moduleinfo;
 mod metadata;
 mod plugins;
 mod vst3_com;
+mod vst3_editor;          // ← NUEVO
 mod vst3_host;
-mod vst3_host_context;   // ← NUEVO
+mod vst3_host_context;
 mod vst3_registry;
 
 use vst3_registry::Vst3Registry;
 
 #[tauri::command]
-fn sumar(a: i32, b: i32) -> i32 {
-    ffi::sumar(a, b)
-}
+fn sumar(a: i32, b: i32) -> i32 { ffi::sumar(a, b) }
 
 #[tauri::command]
-fn saludar(nombre: String) -> String {
-    ffi::saludar(&nombre)
-}
+fn saludar(nombre: String) -> String { ffi::saludar(&nombre) }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -44,8 +41,11 @@ pub fn run() {
             vst3_host::vst3_create_instance,
             vst3_host::vst3_release_instance,
             vst3_host::vst3_list_instances,
-            // ─── DEBUG Fase 2.4 (temporal) ────────────────────
-            vst3_host_context::vst3_debug_host_context,   // ← NUEVO
+            vst3_host::vst3_initialize_instance,
+            vst3_host::vst3_terminate_instance,
+            vst3_editor::vst3_open_editor,      // ← NUEVO
+            vst3_editor::vst3_close_editor,     // ← NUEVO
+            vst3_host_context::vst3_debug_host_context,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
