@@ -343,6 +343,21 @@ pub fn vst3_probe_plugin(bundle_path: String) -> ProbeResult {
 // 🎯 COMANDO — vst3_load_plugin
 // ═══════════════════════════════════════════════════════════════
 
+/// Carga un plugin VST3 en el registry.
+///
+/// ── COMPORTAMIENTO EN CACHE-HIT ──
+/// Si el plugin YA estaba cargado, este comando NO recarga el DLL:
+/// re-itera el factory cacheado y devuelve el mismo shape que en
+/// un load fresco (factory_ptr + classes[]).
+///
+/// Esto es importante porque el frontend usa `classes[]` para elegir
+/// la Audio Module Class antes de `createInstance`. Devolver `[]`
+/// forzaría al frontend a hacer unload+reload (workaround en
+/// `vst3Bridge.loadPluginEnsuringClasses`).
+///
+/// La re-iteración es idempotente en el SDK VST3: `countClasses()`
+/// y `getClassInfo()` son consultas puras sin side-effects sobre el
+/// estado del plugin.
 #[tauri::command]
 pub fn vst3_load_plugin(
     bundle_path: String,
@@ -375,15 +390,42 @@ pub fn vst3_load_plugin(
 
     #[cfg(target_os = "windows")]
     {
-        if registry.contains(&plugin_key) {
-            log::info!("[vst3_host] Plugin ya cargado: {}", plugin_key);
+        // ── CACHE HIT ────────────────────────────────────────────
+        // Plugin ya cargado → re-iteramos el factory y devolvemos
+        // el snapshot completo (mismo shape que en un load fresco).
+        //
+        // SAFETY: el factory_ptr es válido mientras el LoadedPlugin
+        // esté en el registry. `with_plugin` mantiene el lock durante
+        // la iteración, garantizando que nadie hace unload en paralelo.
+        if let Some((factory_ptr, classes)) = registry.with_plugin(&plugin_key, |p| {
+            let ptr = p.factory_ptr;
+            let cls = if ptr != 0 {
+                unsafe { iterate_factory_classes(ptr as *mut _) }
+            } else {
+                Vec::new()
+            };
+            (ptr, cls)
+        }) {
+            log::info!(
+                "[vst3_host] Plugin ya cargado: {} — re-emitiendo {} clase(s)",
+                plugin_key, classes.len()
+            );
             return LoadResult {
-                success: true, message: "Plugin ya estaba cargado".to_string(),
-                bundle_path, dll_path: Some(dll_path_str),
-                plugin_key: Some(plugin_key), factory_ptr: None, classes: vec![],
+                success: true,
+                message: format!("Plugin ya estaba cargado — {} clase(s)", classes.len()),
+                bundle_path,
+                dll_path: Some(dll_path_str),
+                plugin_key: Some(plugin_key),
+                factory_ptr: if factory_ptr != 0 {
+                    Some(format!("0x{:016x}", factory_ptr))
+                } else {
+                    None
+                },
+                classes,
             };
         }
 
+        // ── LOAD FRESCO ──────────────────────────────────────────
         match load_factory(&dll_path) {
             Ok(loaded) => {
                 let factory_hex = format!("0x{:016x}", loaded.factory_ptr);
@@ -439,7 +481,6 @@ pub fn vst3_load_plugin(
         }
     }
 }
-
 // ═══════════════════════════════════════════════════════════════
 // 🎯 COMANDO — vst3_unload_plugin
 // ═══════════════════════════════════════════════════════════════
