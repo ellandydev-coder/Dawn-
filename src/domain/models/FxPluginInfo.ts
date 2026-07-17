@@ -44,6 +44,18 @@ export const FxPluginInfoSchema = z.object({
 
   /** true si el plugin está disponible para usar (false = grayed out) */
   available: z.boolean().default(true),
+
+  /**
+   * Ruta absoluta al bundle del plugin en disco.
+   *
+   * Solo presente para plugins escaneados del filesystem (VST3, VST, CLAP…).
+   * Los built-in y WASM NO la tienen porque viajan dentro del bundle
+   * de la aplicación.
+   *
+   * Necesaria para invocar `vst3Bridge.loadPlugin(bundlePath)` cuando
+   * el usuario añade un VST3 escaneado a una track.
+   */
+  sourcePath: z.string().optional(),
 });
 
 export type FxPluginInfo = Omit<

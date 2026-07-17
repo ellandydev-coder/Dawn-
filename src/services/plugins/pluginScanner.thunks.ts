@@ -11,6 +11,7 @@ import {
 import { FxCatalog } from '@services/fx-catalog/FxCatalog';
 import { PluginScanner } from './PluginScanner';
 import type { ScannedPlugin } from './pluginScanner.types';
+import type { FxPluginInfo } from '@domain/models/FxPluginInfo';
 
 // ═══════════════════════════════════════════════════════════════
 // 🎯 HELPERS
@@ -28,14 +29,14 @@ function parsePluginPaths(pathsString: string): string[] {
 }
 
 /**
- * Convierte un ScannedPlugin (contrato del scanner) a un objeto
- * compatible con FxCatalog.register (FxPluginInfo).
+ * Convierte un ScannedPlugin (contrato del scanner) a FxPluginInfo
+ * (modelo del catálogo).
  *
- * El `path` no viaja al catálogo — es solo metadata del scan.
- * Si se necesita en el futuro (para recargar el plugin), habría
- * que extender FxPluginInfo con un campo opcional `sourcePath`.
+ * ⚠️  Propaga `path` → `sourcePath`. Esto es CRÍTICO: sin sourcePath,
+ * el `FxBrowserModal` no puede llamar a `vst3Bridge.loadPlugin(path)`
+ * cuando el usuario añade un VST3 escaneado a una track.
  */
-function toFxPluginInfo(scanned: ScannedPlugin) {
+function toFxPluginInfo(scanned: ScannedPlugin): FxPluginInfo {
   return {
     id: scanned.id,
     name: scanned.name,
@@ -45,6 +46,7 @@ function toFxPluginInfo(scanned: ScannedPlugin) {
     version: scanned.version,
     description: scanned.description ?? '',
     available: scanned.available,
+    sourcePath: scanned.path,
   };
 }
 

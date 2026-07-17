@@ -10,11 +10,26 @@ import {
 import { addPluginToChain } from '@state/slices/fxChains/fxChainsSlice';
 import { Modal } from '@shared/components/Modal';
 import { FxCatalog } from '@services/fx-catalog/FxCatalog';
+import { vst3Bridge } from '@services/plugins/vst3Bridge';
+import type { FxPluginInfo } from '@domain/models/FxPluginInfo';
 import { useFxBrowser } from '../hooks/useFxBrowser';
 import { FxBrowserSidebar } from './FxBrowserSidebar';
 import { FxBrowserList } from './FxBrowserList';
 
 import './FxBrowserModal.css';
+
+// ═══════════════════════════════════════════════════════════════
+// 🎯 HELPERS
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Un plugin es "nativo del sistema" (VST3/VST/CLAP…) si tiene
+ * un sourcePath en disco. En ese caso, añadirlo a una track pasa
+ * por el bridge Rust en lugar del pipeline Redux built-in.
+ */
+function isNativePlugin(plugin: FxPluginInfo): boolean {
+  return plugin.format === 'vst3' && typeof plugin.sourcePath === 'string';
+}
 
 // ═══════════════════════════════════════════════════════════════
 // 🏗️ COMPONENTE
@@ -27,7 +42,14 @@ import './FxBrowserModal.css';
  *
  * Se abre vía `openFxBrowser(trackId)` desde el store.
  * Se cierra vía `closeFxBrowser()` o con Cancel/backdrop/Escape.
- * Al añadir un plugin: dispatch(addPluginToChain) + abre FxChainWindow.
+ *
+ * ─── Dos rutas de "Add" según el tipo de plugin ────────────
+ *   • Built-in / WASM  → dispatch(addPluginToChain) + abre FxChainWindow
+ *   • VST3 escaneado   → vst3Bridge.loadAndInit() abre ventana nativa
+ *
+ * ⚠️  El caso VST3 aún no persiste la instancia en Redux. Un hito
+ * futuro añadirá un slice `nativePlugins` con {pluginKey, instanceId}
+ * asociado a la track, para poder cerrar/reabrir la ventana desde la UI.
  */
 function FxBrowserModalBase() {
   const dispatch = useAppDispatch();
@@ -62,13 +84,37 @@ function FxBrowserModalBase() {
     dispatch(closeFxBrowser());
   }, [dispatch]);
 
-  const handleAdd = useCallback(() => {
+  const handleAdd = useCallback(async () => {
     if (!selectedPluginId || !trackId) return;
 
     const plugin = FxCatalog.getById(selectedPluginId);
     if (!plugin?.available) return;
 
-    // 1. Añadir instancia a la chain en Redux
+    // ─── Ruta VST3 nativa ────────────────────────────────
+    if (isNativePlugin(plugin)) {
+      const bundlePath = plugin.sourcePath!;
+      try {
+        const result = await vst3Bridge.loadAndInit(bundlePath);
+        console.info(
+          `[FxBrowser] VST3 "${plugin.name}" abierto — ` +
+          `pluginKey=${result.pluginKey} instanceId=${result.instanceId} ` +
+          `editor=${result.width}×${result.height}`
+        );
+        // TODO: hito siguiente → persistir {pluginKey, instanceId, trackId}
+        // en un slice `nativePlugins` para poder cerrar/reabrir la ventana.
+      } catch (err) {
+        console.error(
+          `[FxBrowser] Error cargando VST3 "${plugin.name}":`,
+          err
+        );
+        // Mantenemos el modal abierto para que el usuario reintente / elija otro.
+        return;
+      }
+      dispatch(closeFxBrowser());
+      return;
+    }
+
+    // ─── Ruta built-in / WASM (comportamiento clásico) ───
     dispatch(
       addPluginToChain({
         ownerId: trackId,
@@ -76,11 +122,7 @@ function FxBrowserModalBase() {
         displayName: plugin.name,
       })
     );
-
-    // 2. Abrir (o mantener abierta) la ventana FX Chain de esta track
     dispatch(openFxChainWindow(trackId));
-
-    // 3. Cerrar el browser
     dispatch(closeFxBrowser());
   }, [selectedPluginId, trackId, dispatch]);
 
