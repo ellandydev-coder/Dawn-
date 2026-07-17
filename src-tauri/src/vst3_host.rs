@@ -1,21 +1,23 @@
 // src-tauri/src/vst3_host.rs
 //
-// VST3 Host Bridge — Fase 1
+// VST3 Host Bridge
 //
-// Cargar plugins VST3 dinámicamente vía Windows API.
-// Por ahora solo prueba que podemos cargar el DLL y obtener
-// un handle válido. Sin instanciar el plugin todavía.
-//
-// ── ESTADO ACTUAL (Fase 1.3) ──
+// ── ESTADO ACTUAL (Fase 1.4) ──
 // ✅ Resolver DLL real dentro del bundle .vst3
 // ✅ LoadLibraryW del DLL
-// ⬜ GetProcAddress("GetPluginFactory")     [Fase 1.4]
-// ⬜ Llamar al factory y listar clases       [Fase 1.5]
+// ✅ GetProcAddress("GetPluginFactory")
+// ✅ Llamar al factory y obtener puntero
+// ⬜ Interpretar el IPluginFactory (vtable, iterar classes)  [Fase 1.5]
 //
-// ── COMPORTAMIENTO ──
-// El bundle VST3 en Windows es una carpeta .vst3/ que contiene:
-//   Contents/x86_64-win/<PluginName>.vst3
-// Ese archivo interno ES el DLL real.
+// ── SOBRE VST3 ──
+// Todo plugin VST3 exporta la función C:
+//   IPluginFactory* GetPluginFactory();
+//
+// Es la puerta de entrada al plugin. Devuelve un puntero a un objeto COM
+// que implementa IPluginFactory. Con ese objeto podemos:
+//   - Preguntar cuántas clases tiene el plugin
+//   - Obtener info de cada clase (nombre, categoría, CID)
+//   - Instanciar cualquiera de esas clases (Fase 2)
 
 use std::path::{Path, PathBuf};
 
@@ -23,15 +25,15 @@ use std::path::{Path, PathBuf};
 // 🎯 TIPOS
 // ═══════════════════════════════════════════════════════════════
 
-/// Resultado de intentar cargar un plugin VST3.
-/// Se serializa al frontend para debug.
 #[derive(Debug, serde::Serialize)]
 pub struct ProbeResult {
     pub success: bool,
     pub message: String,
     pub bundle_path: String,
     pub dll_path: Option<String>,
-    pub dll_handle: Option<String>, // formato hex "0x7ff8a2b40000"
+    pub dll_handle: Option<String>,
+    /// Puntero al IPluginFactory devuelto por GetPluginFactory()
+    pub factory_ptr: Option<String>,
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -47,14 +49,11 @@ const DLL_SEARCH_PATHS: &[&str] = &["Contents/MacOS"];
 #[cfg(target_os = "linux")]
 const DLL_SEARCH_PATHS: &[&str] = &["Contents/x86_64-linux"];
 
-/// Dado el path al bundle `.vst3`, encuentra el binario real dentro.
 fn resolve_dll_path(bundle: &Path) -> Option<PathBuf> {
-    // Caso 1: bundle es un archivo directamente
     if bundle.is_file() {
         return Some(bundle.to_path_buf());
     }
 
-    // Caso 2: bundle es una carpeta — buscar dentro
     for sub in DLL_SEARCH_PATHS {
         let dir = bundle.join(sub);
         if !dir.is_dir() {
@@ -81,61 +80,134 @@ fn resolve_dll_path(bundle: &Path) -> Option<PathBuf> {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 🎯 CARGAR EL DLL (Windows)
+// 🎯 CARGAR EL DLL + LLAMAR GetPluginFactory (Windows)
 // ═══════════════════════════════════════════════════════════════
 
-/// Carga el DLL en memoria y devuelve el handle como puntero.
+/// Firma de la función `GetPluginFactory` exportada por todo VST3.
 ///
-/// Devuelve `Ok(handle)` con el HMODULE convertido a usize,
-/// o `Err(mensaje)` con el error de Windows.
+/// En C:
+///     typedef IPluginFactory* (*GetFactoryProc)();
 ///
-/// ⚠️  Este handle se DEBE liberar con FreeLibrary cuando ya
-/// no lo necesitemos. Por ahora lo cargamos y liberamos en el
-/// mismo probe — para la Fase 2 tendremos que mantenerlo vivo.
-#[cfg(target_os = "windows")]
-fn load_dll(dll_path: &Path) -> Result<usize, String> {
-    use windows::core::PCWSTR;
-    use windows::Win32::Foundation::FreeLibrary;
-    use windows::Win32::System::LibraryLoader::LoadLibraryW;
+/// En Rust:
+///     extern "C" fn() -> *mut c_void
+///
+/// Devuelve puntero a IPluginFactory (o null si algo va mal).
+type GetPluginFactoryFn = unsafe extern "C" fn() -> *mut core::ffi::c_void;
 
-    // Convertir el path a UTF-16 null-terminated (formato WinAPI)
+/// Resultado interno del probe.
+#[derive(Debug)]
+struct ProbeInfo {
+    dll_handle: usize,
+    factory_ptr: usize,
+}
+
+/// Carga el DLL, obtiene GetPluginFactory, la llama, y devuelve
+/// tanto el handle del DLL como el puntero al factory.
+///
+/// ⚠️ Libera el DLL al final. Para persistir el plugin en memoria
+/// será necesario mantener el HMODULE vivo (Fase 2).
+#[cfg(target_os = "windows")]
+fn probe_vst3(dll_path: &Path) -> Result<ProbeInfo, String> {
+    use windows::core::{PCSTR, PCWSTR};
+    use windows::Win32::Foundation::FreeLibrary;
+    use windows::Win32::System::LibraryLoader::{GetProcAddress, LoadLibraryW};
+
+    // ─── 1. Cargar el DLL ─────────────────────────────────────
     let wide: Vec<u16> = dll_path
         .to_string_lossy()
         .encode_utf16()
         .chain(std::iter::once(0))
         .collect();
 
-    // Cargar el DLL
-    let hmodule = unsafe { LoadLibraryW(PCWSTR(wide.as_ptr())) };
+    let hmodule = unsafe { LoadLibraryW(PCWSTR(wide.as_ptr())) }
+        .map_err(|e| format!("LoadLibraryW falló: {}", e))?;
 
-    match hmodule {
-        Ok(handle) if !handle.is_invalid() => {
-            let ptr = handle.0 as usize;
-
-            // Por ahora liberamos inmediatamente — solo queríamos probar
-            // que se puede cargar. En Fase 2 mantendremos el handle vivo.
-            unsafe {
-                let _ = FreeLibrary(handle);
-            }
-
-            Ok(ptr)
-        }
-        Ok(_) => Err("LoadLibraryW devolvió handle inválido".to_string()),
-        Err(e) => Err(format!("LoadLibraryW falló: {}", e)),
+    if hmodule.is_invalid() {
+        return Err("LoadLibraryW devolvió handle inválido".to_string());
     }
+
+    let handle_ptr = hmodule.0 as usize;
+
+    // ─── 2. Buscar el símbolo "GetPluginFactory" ──────────────
+    // GetProcAddress usa strings ANSI (null-terminated ASCII)
+    let symbol_name = b"GetPluginFactory\0";
+    let proc_addr = unsafe { GetProcAddress(hmodule, PCSTR(symbol_name.as_ptr())) };
+
+    let proc_addr = match proc_addr {
+        Some(addr) => addr,
+        None => {
+            unsafe {
+                let _ = FreeLibrary(hmodule);
+            }
+            return Err(
+                "Símbolo 'GetPluginFactory' no encontrado en el DLL. \
+                 ¿Es un VST3 válido?"
+                    .to_string(),
+            );
+        }
+    };
+
+    // ─── 3. Convertir el puntero en una función y llamarla ────
+    //
+    // `proc_addr` es un puntero a función crudo. Lo transmutamos
+    // al tipo de función esperado y lo invocamos.
+    //
+    // SAFETY: confiamos en que el DLL es un VST3 real y que
+    // GetPluginFactory tiene la firma esperada. Si no lo es,
+    // esto puede crashear.
+    let get_factory: GetPluginFactoryFn = unsafe { std::mem::transmute(proc_addr) };
+
+    let factory_ptr = unsafe { get_factory() };
+
+    if factory_ptr.is_null() {
+        unsafe {
+            let _ = FreeLibrary(hmodule);
+        }
+        return Err(
+            "GetPluginFactory() devolvió NULL. El plugin falló al inicializar su factory."
+                .to_string(),
+        );
+    }
+
+    let factory_addr = factory_ptr as usize;
+
+    // ─── 4. Liberar el DLL (por ahora) ────────────────────────
+    //
+    // ⚠️ IMPORTANTE: al liberar el DLL, el factory_ptr queda
+    // "colgando" (dangling). Solo lo guardamos como número para
+    // debug. NO lo uses después de FreeLibrary.
+    //
+    // En Fase 2 NO liberaremos el DLL — lo mantendremos vivo
+    // en un HashMap para poder usar el factory después.
+    unsafe {
+        let _ = FreeLibrary(hmodule);
+    }
+
+    Ok(ProbeInfo {
+        dll_handle: handle_ptr,
+        factory_ptr: factory_addr,
+    })
 }
 
-/// Stub para plataformas no-Windows.
 #[cfg(not(target_os = "windows"))]
-fn load_dll(_dll_path: &Path) -> Result<usize, String> {
-    Err("Load DLL solo implementado en Windows por ahora".to_string())
+fn probe_vst3(_dll_path: &Path) -> Result<ProbeInfo, String> {
+    Err("Probe VST3 solo implementado en Windows por ahora".to_string())
+}
+
+// Stub para poder tener el tipo en no-windows (los tests siguen compilando)
+#[cfg(not(target_os = "windows"))]
+#[allow(dead_code)]
+#[derive(Debug)]
+struct ProbeInfo {
+    dll_handle: usize,
+    factory_ptr: usize,
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 🎯 COMANDO TAURI — probe_plugin
+// 🎯 COMANDO TAURI — vst3_probe_plugin
 // ═══════════════════════════════════════════════════════════════
 
-/// Prueba a cargar un plugin VST3 y devuelve info de debug.
+/// Prueba a cargar un plugin VST3 y obtener su plugin factory.
 #[tauri::command]
 pub fn vst3_probe_plugin(bundle_path: String) -> ProbeResult {
     log::info!("[vst3_host] Probe iniciado: {}", bundle_path);
@@ -150,6 +222,7 @@ pub fn vst3_probe_plugin(bundle_path: String) -> ProbeResult {
             bundle_path,
             dll_path: None,
             dll_handle: None,
+            factory_ptr: None,
         };
     }
 
@@ -167,6 +240,7 @@ pub fn vst3_probe_plugin(bundle_path: String) -> ProbeResult {
                 bundle_path,
                 dll_path: None,
                 dll_handle: None,
+                factory_ptr: None,
             };
         }
     };
@@ -174,32 +248,37 @@ pub fn vst3_probe_plugin(bundle_path: String) -> ProbeResult {
     let dll_path_str = dll_path.to_string_lossy().to_string();
     log::info!("[vst3_host] DLL resuelto: {}", dll_path_str);
 
-    // ─── Cargar el DLL ────────────────────────────────────────
-    match load_dll(&dll_path) {
-        Ok(handle_ptr) => {
-            let handle_hex = format!("0x{:016x}", handle_ptr);
+    // ─── Cargar + obtener factory ────────────────────────────
+    match probe_vst3(&dll_path) {
+        Ok(info) => {
+            let handle_hex = format!("0x{:016x}", info.dll_handle);
+            let factory_hex = format!("0x{:016x}", info.factory_ptr);
+
             log::info!(
-                "[vst3_host] ✅ DLL cargado: {} → {}",
+                "[vst3_host] ✅ {} → DLL={}, Factory={}",
                 dll_path.file_name().unwrap_or_default().to_string_lossy(),
-                handle_hex
+                handle_hex,
+                factory_hex
             );
 
             ProbeResult {
                 success: true,
-                message: format!("DLL cargado correctamente (Fase 1.3 OK)"),
+                message: "DLL + Factory obtenidos (Fase 1.4 OK)".to_string(),
                 bundle_path,
                 dll_path: Some(dll_path_str),
                 dll_handle: Some(handle_hex),
+                factory_ptr: Some(factory_hex),
             }
         }
         Err(e) => {
-            log::error!("[vst3_host] ❌ Load falló: {}", e);
+            log::error!("[vst3_host] ❌ Probe falló: {}", e);
             ProbeResult {
                 success: false,
-                message: format!("Error cargando DLL: {}", e),
+                message: format!("Error: {}", e),
                 bundle_path,
                 dll_path: Some(dll_path_str),
                 dll_handle: None,
+                factory_ptr: None,
             }
         }
     }
@@ -222,20 +301,20 @@ mod tests {
 
     #[cfg(target_os = "windows")]
     #[test]
-    fn can_load_kernel32() {
-        // Test sanity: cargar un DLL del sistema que sabemos existe.
-        // Si esto falla, tenemos un problema serio con el crate windows.
+    fn probe_fails_on_kernel32_not_a_vst3() {
+        // kernel32.dll no exporta "GetPluginFactory" — debe fallar
+        // pero SIN crashear. Este test verifica el error handling.
         let path = PathBuf::from("C:\\Windows\\System32\\kernel32.dll");
-        assert!(path.exists(), "kernel32.dll debe existir en Windows");
+        assert!(path.exists());
 
-        let result = load_dll(&path);
+        let result = probe_vst3(&path);
+        assert!(result.is_err(), "kernel32 no es VST3, debe fallar");
+
+        let err = result.unwrap_err();
         assert!(
-            result.is_ok(),
-            "Debería poder cargar kernel32.dll. Error: {:?}",
-            result
+            err.contains("GetPluginFactory"),
+            "El error debe mencionar GetPluginFactory. Got: {}",
+            err
         );
-
-        let handle = result.unwrap();
-        assert!(handle > 0, "El handle debe ser un puntero válido");
     }
 }
