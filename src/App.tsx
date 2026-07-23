@@ -1,11 +1,12 @@
 ﻿// src/App.tsx
 
-// 🎨 CSS
 import './App.css';
 import '@app/layouts/DAWLayout.css';
 import '@features/splash/Splash.css';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { invoke } from '@tauri-apps/api/core';
+import { appConfig } from '@app/config/appConfig';
 import { audioEngine } from '@audio/engine/AudioEngine';
 import { StoreAudioBridge } from '@state/bridges/StoreAudioBridge';
 import { store, useAppDispatch, useAppSelector } from '@state/store';
@@ -27,7 +28,6 @@ import { FxBrowserModal } from '@features/fx-browser/components/FxBrowserModal';
 import { FxChainWindow } from '@features/fx-chain/components/FxChainWindow';
 import { PreferencesWindow } from '@features/preferences/components/PreferencesWindow';
 import { MeterDebug } from '@features/debug';
-import { ControlSurfaceIcon } from '@shared/components/icons/branding/ControlSurfaceIcon';
 
 export default function App() {
   const [isReady, setIsReady] = useState(false);
@@ -36,47 +36,90 @@ export default function App() {
   const showMixer = useAppSelector((s) => s.ui.showMixer);
   const showDebug = useAppSelector((s) => s.ui.showDebug);
 
-  const handleStart = async () => {
-    await audioEngine.init();
-    store.dispatch(setSampleRate(audioEngine.sampleRate));
-    const bridge = new StoreAudioBridge(store);
-    bridge.attach();
-    bridgeRef.current = bridge;
-    setIsReady(true);
-  };
-
+  // ══════════════════════════════════════════════════════════════
+  // 🚀 INICIALIZACIÓN CON SPLASH CONFIGURABLE
+  // ══════════════════════════════════════════════════════════════
   useEffect(() => {
+    let cancelled = false;
+
+    const init = async () => {
+      const { splashMinDuration, splashFixedDuration } = appConfig;
+      const startTime = Date.now();
+
+      try {
+        if (splashFixedDuration) {
+          // ── Duración FIJA: motor + delay en paralelo ──
+          await Promise.all([
+            audioEngine.init(),
+            new Promise((resolve) => setTimeout(resolve, splashMinDuration)),
+          ]);
+        } else {
+          // ── Duración MÍNIMA: esperar lo que falte ──
+          await audioEngine.init();
+
+          const elapsed = Date.now() - startTime;
+          const remaining = splashMinDuration - elapsed;
+
+          if (remaining > 0) {
+            await new Promise((resolve) => setTimeout(resolve, remaining));
+          }
+        }
+
+        if (cancelled) return;
+
+        // Configurar store con sample rate real
+        store.dispatch(setSampleRate(audioEngine.sampleRate));
+
+        // Conectar bridge audio ↔ estado
+        const bridge = new StoreAudioBridge(store);
+        bridge.attach();
+        bridgeRef.current = bridge;
+
+        setIsReady(true);
+
+        // Cerrar splash y mostrar ventana principal
+        await invoke('show_main_window');
+      } catch (err) {
+        console.error('Error al iniciar el motor de audio:', err);
+      }
+    };
+
+    init();
+
     return () => {
+      cancelled = true;
       bridgeRef.current?.detach();
       audioEngine.dispose();
     };
   }, []);
 
+  // ══════════════════════════════════════════════════════════════
+  // 🔄 LOADING STATE (ventana main oculta durante esto)
+  // ══════════════════════════════════════════════════════════════
   if (!isReady) {
     return (
-      <div className="splash">
-        <div className="splash-card">
-          <div className="splash-logo">
-            <ControlSurfaceIcon size={96} title="Web DAW" />
-          </div>
-          <h1>WEB DAW</h1>
-          <p>Estación de audio digital para tu navegador</p>
-          <button className="splash-start" onClick={handleStart}>
-            Iniciar motor de audio
-          </button>
-          <div className="splash-hint">
-            El navegador requiere una interacción para activar el audio.
-          </div>
-        </div>
+      <div
+        style={{
+          height: '100vh',
+          display: 'grid',
+          placeItems: 'center',
+          background: '#0a0c12',
+          color: '#555',
+          fontSize: '0.8rem',
+          letterSpacing: '2px',
+        }}
+      >
+        Cargando…
       </div>
     );
   }
 
+  // ══════════════════════════════════════════════════════════════
+  // 🎹 DAW PRINCIPAL
+  // ══════════════════════════════════════════════════════════════
   return (
     <div className={`daw-bl ${showMixer ? 'with-mixer' : ''}`}>
       <TopBar />
-
-      {/* 🧰 Toolbar REAPER — ocupa TODO el ancho */}
       <WorkspaceToolbar />
 
       <div className="daw-bl-body">
@@ -94,32 +137,9 @@ export default function App() {
 
       {showDebug && <DebugPanel />}
 
-      {/* ══════════════════════════════════════════════════════
-          🎚️ MODAL DE PROPIEDADES DEL CLIP (global)
-          ══════════════════════════════════════════════════════ */}
       <ClipPropertiesGlobalModal />
-
-      {/* ══════════════════════════════════════════════════════
-          🎛️ FX BROWSER MODAL (global)
-          ══════════════════════════════════════════════════════ */}
       <FxBrowserModal />
-
-      {/* ══════════════════════════════════════════════════════
-          🎛️ FX CHAIN WINDOWS (flotantes, múltiples)
-          -------------------------------------------------------
-          Una ventana por cada trackId en openFxChainWindows[].
-          Cada una es independiente, arrastrable, no bloquea la UI.
-          Se abren vía dispatch(openFxChainWindow(trackId)) /
-          dispatch(toggleFxChainWindow(trackId)).
-          ══════════════════════════════════════════════════════ */}
       <FxChainWindowsHost />
-
-      {/* ══════════════════════════════════════════════════════
-          ⚙️ PREFERENCES WINDOW (flotante, singleton)
-          -------------------------------------------------------
-          Solo hay una instancia. Se abre desde el botón ☰ del
-          TopBar via dispatch(togglePreferences()).
-          ══════════════════════════════════════════════════════ */}
       <PreferencesWindowHost />
     </div>
   );
@@ -128,16 +148,6 @@ export default function App() {
 // ═══════════════════════════════════════════════════════════════
 // 🎛️ FX CHAIN WINDOWS HOST
 // ═══════════════════════════════════════════════════════════════
-
-/**
- * FxChainWindowsHost
- * ------------------
- * Renderiza N ventanas FX Chain (una por track abierta).
- * Aislado del App para que sus re-renders no invaliden el resto.
- *
- * windowIndex escala la posición inicial para que las ventanas
- * no se apilen exactamente una encima de la otra.
- */
 function FxChainWindowsHost() {
   const openWindows = useAppSelector(selectOpenFxChainWindows);
 
@@ -157,14 +167,6 @@ function FxChainWindowsHost() {
 // ═══════════════════════════════════════════════════════════════
 // ⚙️ PREFERENCES WINDOW HOST
 // ═══════════════════════════════════════════════════════════════
-
-/**
- * PreferencesWindowHost
- * ---------------------
- * Renderiza (o no) la ventana singleton de Preferences según el
- * flag `showPreferences` del store. Aislado del App para que sus
- * re-renders no invaliden el resto del árbol.
- */
 function PreferencesWindowHost() {
   const isOpen = useAppSelector(selectShowPreferences);
   if (!isOpen) return null;
@@ -174,7 +176,6 @@ function PreferencesWindowHost() {
 // ═══════════════════════════════════════════════════════════════
 // 🎚️ CLIP PROPERTIES GLOBAL MODAL
 // ═══════════════════════════════════════════════════════════════
-
 function ClipPropertiesGlobalModal() {
   const dispatch = useAppDispatch();
   const clipPropertiesModalId = useAppSelector(selectClipPropertiesModalId);
@@ -194,7 +195,6 @@ function ClipPropertiesGlobalModal() {
 // ═══════════════════════════════════════════════════════════════
 // 📊 DEBUG PANEL
 // ═══════════════════════════════════════════════════════════════
-
 function DebugPanel() {
   const trackIds = useAppSelector((s) => s.tracks.allIds);
   const trackById = useAppSelector((s) => s.tracks.byId);
