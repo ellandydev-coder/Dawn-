@@ -297,6 +297,7 @@ pub fn vst3_update_editor_bounds(
 
 #[tauri::command]
 pub fn vst3_close_editor(
+    app:         AppHandle,
     plugin_key:  String,
     instance_id: String,
     registry:    State<'_, Vst3Registry>,
@@ -309,7 +310,16 @@ pub fn vst3_close_editor(
 
         match editor {
             Some(mut ed) => {
-                unsafe { ed.teardown(); }
+                let (tx, rx) = std::sync::mpsc::channel::<()>();
+                let dispatch = app.run_on_main_thread(move || {
+                    unsafe { ed.teardown(); }
+                    let _ = tx.send(());
+                });
+                if dispatch.is_ok() {
+                    let _ = rx.recv();
+                } else {
+                    unsafe { ed.teardown(); }
+                }
                 true
             }
             None => false,
@@ -317,7 +327,7 @@ pub fn vst3_close_editor(
     }
     #[cfg(not(target_os = "windows"))]
     {
-        let _ = (plugin_key, instance_id, registry);
+        let _ = (app, plugin_key, instance_id, registry);
         false
     }
 }

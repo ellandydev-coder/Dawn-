@@ -2,7 +2,7 @@
 
 import { vst3Commands } from './invoke';
 import { loadPluginEnsuringClasses, findAudioModuleClass, ensureInstance } from './ensureInstance';
-import { closeAndUnload } from './lifecycle';
+import { loadAndInit, closeAndUnload } from './lifecycle';
 
 export * from './types';
 
@@ -11,5 +11,6 @@ export const vst3Bridge = {
   loadPluginEnsuringClasses,
   findAudioModuleClass,
   ensureInstance,
+  loadAndInit,
   closeAndUnload,
 };

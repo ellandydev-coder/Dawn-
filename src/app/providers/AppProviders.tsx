@@ -7,7 +7,7 @@ import { shortcutManager } from '@services/shortcuts/ShortcutManager';
 import { bootstrapShortcuts } from '@services/shortcuts/registry';
 import { registration as appShortcuts } from '@app/config/shortcuts';
 import { ShortcutsOverlay } from '@features/shortcuts';
-import { startPluginScan } from '@services/plugins/pluginScanner.thunks';
+import { startPluginScan } from '@state/slices/pluginScan/pluginScanThunks';
 
 interface AppProvidersProps {
   children: ReactNode;

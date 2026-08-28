@@ -130,7 +130,7 @@ export default defineConfig({
     // Tauri usa Chromium/WebView2 modernos → target alto = mejor performance
     target: process.env.TAURI_ENV_PLATFORM === 'windows'
       ? 'chrome110'
-      : 'safari14',
+      : 'es2022',
 
     // No minificar en modo debug (mejor stack traces)
     minify: !process.env.TAURI_ENV_DEBUG ? 'esbuild' : false,

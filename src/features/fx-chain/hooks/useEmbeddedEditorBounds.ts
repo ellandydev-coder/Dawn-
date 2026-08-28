@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, type RefObject } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { vst3Bridge } from '@services/plugins/vst3Bridge';
+import { vst3Bridge } from '@audio/plugins/vst3';
 
 export function useEmbeddedEditorBounds(
   containerRef: RefObject<HTMLDivElement | null>,
@@ -10,6 +10,7 @@ export function useEmbeddedEditorBounds(
   instanceId: string
 ) {
   const isOpenedRef = useRef<boolean>(false);
+  const isOpeningRef = useRef<boolean>(false);
   const lastBoundsRef = useRef<{ x: number; y: number; w: number; h: number }>({
     x: 0,
     y: 0,
@@ -36,13 +37,17 @@ export function useEmbeddedEditorBounds(
       const last = lastBoundsRef.current;
       const hasMovedOrResized = x !== last.x || y !== last.y || w !== last.w || h !== last.h;
 
-      if (!isOpenedRef.current) {
+      if (!isOpenedRef.current && !isOpeningRef.current) {
+        isOpeningRef.current = true;
         lastBoundsRef.current = { x, y, w, h };
         try {
           await vst3Bridge.ensureInstance(bundlePath, instanceId);
-          if (cancelled) return;
+          if (cancelled) {
+            isOpeningRef.current = false;
+            return;
+          }
 
-          const res = await invoke<{ success: boolean }>('vst3_open_editor', {
+          const res = await invoke<{ success: boolean; message: string }>('vst3_open_editor', {
             pluginKey: bundlePath,
             instanceId,
             x,
@@ -50,13 +55,27 @@ export function useEmbeddedEditorBounds(
             width: w,
             height: h,
           });
+
+          if (cancelled) {
+            isOpeningRef.current = false;
+            if (res.success) {
+              invoke('vst3_close_editor', { pluginKey: bundlePath, instanceId }).catch(() => {});
+            }
+            return;
+          }
+
           if (res.success) {
             isOpenedRef.current = true;
+            console.info('[useEmbeddedEditorBounds] Editor VST3 abierto:', res.message);
+          } else {
+            console.warn('[useEmbeddedEditorBounds] Error abriendo editor VST3:', res.message);
           }
         } catch (e) {
-          console.error('[useEmbeddedEditorBounds] Error abriendo editor nativo:', e);
+          console.error('[useEmbeddedEditorBounds] Excepción abriendo editor nativo:', e);
+        } finally {
+          isOpeningRef.current = false;
         }
-      } else if (hasMovedOrResized) {
+      } else if (isOpenedRef.current && hasMovedOrResized) {
         lastBoundsRef.current = { x, y, w, h };
         invoke('vst3_update_editor_bounds', {
           pluginKey: bundlePath,
@@ -81,9 +100,10 @@ export function useEmbeddedEditorBounds(
       if (animFrameRef.current !== null) {
         cancelAnimationFrame(animFrameRef.current);
       }
-      if (isOpenedRef.current) {
-        invoke('vst3_close_editor', { pluginKey: bundlePath, instanceId }).catch(() => {});
+      if (isOpenedRef.current || isOpeningRef.current) {
         isOpenedRef.current = false;
+        isOpeningRef.current = false;
+        invoke('vst3_close_editor', { pluginKey: bundlePath, instanceId }).catch(() => {});
       }
     };
   }, [containerRef, bundlePath, instanceId]);
