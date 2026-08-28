@@ -10,99 +10,63 @@ import { FxChainPluginUI } from './FxChainPluginUI';
 
 import './FxChainWindow.css';
 
-// ═══════════════════════════════════════════════════════════════
-// 🎯 TIPOS
-// ═══════════════════════════════════════════════════════════════
-
 export interface FxChainWindowProps {
-  /** Track cuya FX Chain se muestra */
   trackId: string;
-  /** Offset para escalonar ventanas múltiples (evita que se apilen) */
   windowIndex?: number;
 }
 
-// ═══════════════════════════════════════════════════════════════
-// 🛠️ CONSTANTES
-// ═══════════════════════════════════════════════════════════════
+const BASE_X = 180;
+const BASE_Y = 100;
+const STAGGER = 25;
+const WINDOW_WIDTH = 680;
+const WINDOW_MIN_HEIGHT = 440;
 
-const BASE_X = 200;
-const BASE_Y = 120;
-const STAGGER = 30;
-const WINDOW_WIDTH = 560;
-const WINDOW_MIN_HEIGHT = 320;
-
-// ═══════════════════════════════════════════════════════════════
-// 🏗️ COMPONENTE
-// ═══════════════════════════════════════════════════════════════
-
-/**
- * FxChainWindow
- * -------------
- * Ventana flotante estilo REAPER para ver/editar la cadena de
- * efectos de una track.
- *
- * Toda la lógica de "chrome" (drag, pin, close, portal, titlebar)
- * la hereda de `<FloatingWindow>`. Este componente solo aporta:
- *   • El contenido específico (lista de plugins + panel UI)
- *   • La conexión al store (trackId → chain, dispatch de close)
- *   • Selección interna del plugin activo
- */
 function FxChainWindowBase({ trackId, windowIndex = 0 }: FxChainWindowProps) {
   const dispatch = useAppDispatch();
-
-  // ─── Store data ─────────────────────────────────────────────
 
   const trackName = useAppSelector(
     (s) => s.tracks.byId[trackId]?.name ?? `Track ${trackId}`
   );
-
   const chain = useAppSelector((s) => selectFxChainByOwnerId(s, trackId));
-
-  // ─── Local state ────────────────────────────────────────────
-
   const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null);
-
-  // ─── Derivados ──────────────────────────────────────────────
 
   const plugins = useMemo(() => chain?.plugins ?? [], [chain?.plugins]);
 
   const selectedInstance = useMemo(
-    () => plugins.find((p) => p.id === selectedInstanceId) ?? null,
+    () => plugins.find((p) => p.id === selectedInstanceId) ?? plugins[0] ?? null,
     [plugins, selectedInstanceId]
   );
-
-  const title = `FX: ${trackName}`;
-
-  // ─── Handlers ───────────────────────────────────────────────
 
   const handleClose = useCallback(() => {
     dispatch(closeFxChainWindow(trackId));
   }, [dispatch, trackId]);
 
-  const handleSelect = useCallback((instanceId: string) => {
-    setSelectedInstanceId(instanceId);
-  }, []);
-
-  // ─── Render ─────────────────────────────────────────────────
-
   return (
     <FloatingWindow
-      title={title}
+      title={`FX: ${trackName}`}
       onClose={handleClose}
       initialX={BASE_X + windowIndex * STAGGER}
       initialY={BASE_Y + windowIndex * STAGGER}
       width={WINDOW_WIDTH}
       minHeight={WINDOW_MIN_HEIGHT}
-      className="fxchain-window"
-      dataAttrs={{ 'data-track-id': trackId }}
+      className="fxchain-window reaper-theme"
     >
-      <FxChainList
-        ownerId={trackId}
-        plugins={plugins}
-        selectedInstanceId={selectedInstanceId}
-        onSelect={handleSelect}
-      />
-      <FxChainPluginUI instance={selectedInstance} />
+      {/* Menú Superior estilo REAPER */}
+      <div className="reaper-window-menubar">
+        <span>FX</span>
+        <span>Edit</span>
+        <span>Options</span>
+      </div>
+
+      <div className="fxchain-window__content">
+        <FxChainList
+          ownerId={trackId}
+          plugins={plugins}
+          selectedInstanceId={selectedInstance?.id ?? null}
+          onSelect={setSelectedInstanceId}
+        />
+        <FxChainPluginUI instance={selectedInstance} />
+      </div>
     </FloatingWindow>
   );
 }

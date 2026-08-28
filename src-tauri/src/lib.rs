@@ -1,14 +1,14 @@
+// src-tauri/src/lib.rs
+
 mod ffi;
 mod moduleinfo;
 mod metadata;
 mod plugins;
+mod vst3;
 mod vst3_com;
-mod vst3_editor;
-mod vst3_host;
 mod vst3_host_context;
-mod vst3_registry;
 
-use vst3_registry::Vst3Registry;
+use vst3::Vst3Registry;
 
 #[tauri::command]
 fn sumar(a: i32, b: i32) -> i32 { ffi::sumar(a, b) }
@@ -22,12 +22,10 @@ fn saludar(nombre: String) -> String { ffi::saludar(&nombre) }
 async fn show_main_window(app: tauri::AppHandle) -> Result<(), String> {
     use tauri::Manager;
 
-    // Cerrar splash
     if let Some(splash) = app.get_webview_window("splash") {
         let _ = splash.close();
     }
 
-    // Mostrar main + ponerla en la barra de tareas
     if let Some(main) = app.get_webview_window("main") {
         main.set_skip_taskbar(false).map_err(|e| e.to_string())?;
         main.show().map_err(|e| e.to_string())?;
@@ -56,18 +54,21 @@ pub fn run() {
             saludar,
             show_main_window,
             plugins::scan_vst_plugins,
-            vst3_host::vst3_probe_plugin,
-            vst3_host::vst3_load_plugin,
-            vst3_host::vst3_unload_plugin,
-            vst3_host::vst3_list_loaded,
-            vst3_host::vst3_create_instance,
-            vst3_host::vst3_release_instance,
-            vst3_host::vst3_list_instances,
-            vst3_host::vst3_initialize_instance,
-            vst3_host::vst3_terminate_instance,
-            vst3_editor::vst3_open_editor,
-            vst3_editor::vst3_close_editor,
+            vst3::vst3_probe_plugin,
+            vst3::vst3_load_plugin,
+            vst3::vst3_unload_plugin,
+            vst3::vst3_list_loaded,
+            vst3::vst3_create_instance,
+            vst3::vst3_release_instance,
+            vst3::vst3_list_instances,
+            vst3::vst3_initialize_instance,
+            vst3::vst3_terminate_instance,
+            vst3::vst3_open_editor,
+            vst3::vst3_update_editor_bounds,
+            vst3::vst3_close_editor,
             vst3_host_context::vst3_debug_host_context,
+            vst3::vst3_activate_processing,
+            vst3::vst3_process_block,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

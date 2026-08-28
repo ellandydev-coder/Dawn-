@@ -1,92 +1,122 @@
 /* src/features/fx-chain/components/FxChainWindow.css */
 
-/* ═══════════════════════════════════════════════════════════════
-   🎛️ FX CHAIN WINDOW — Contenido específico
-   ---------------------------------------------------------------
-   El chrome (titlebar, drag, pin, close, borde, sombra) lo aporta
-   <FloatingWindow>. Aquí solo definimos:
-     • Layout interno (sidebar + panel)
-     • Estilos de FxChainList
-     • Estilos de FxChainPluginUI
-   ═══════════════════════════════════════════════════════════════ */
+.reaper-theme {
+  background-color: #d4d4d4 !important;
+  color: #000 !important;
+  font-family: Tahoma, 'MS Sans Serif', sans-serif;
+  font-size: 11px;
+}
 
-/* ── Lista izquierda ───────────────────────────────────────── */
+/* Forzar flex column en el body de FloatingWindow */
+.fxchain-window .floating-window__body {
+  display: flex !important;
+  flex-direction: column !important;
+  height: calc(100% - 28px) !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  background-color: #d4d4d4 !important;
+}
 
+.reaper-window-menubar {
+  display: flex;
+  gap: 12px;
+  background-color: #e0e0e0;
+  border-bottom: 1px solid #a0a0a0;
+  padding: 3px 8px;
+  font-size: 11px;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.reaper-window-menubar span {
+  cursor: pointer;
+}
+
+.reaper-window-menubar span:hover {
+  text-decoration: underline;
+}
+
+.fxchain-window__content {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Panel lateral izquierdo (Lista de plugins) */
 .fxchain-list {
-  width: 180px;
-  min-width: 140px;
+  width: 170px;
+  min-width: 170px;
+  max-width: 170px;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid #2a2a35;
-  background: #151520;
+  border-right: 1px solid #a0a0a0;
+  background: #e0e0e0;
   flex-shrink: 0;
 }
 
 .fxchain-list__items {
   flex: 1;
   overflow-y: auto;
-  padding: 4px 0;
+  padding: 2px;
+  background: #fff;
+  border: 1px solid #808080;
+  margin: 4px;
 }
 
 .fxchain-list__empty {
-  padding: 16px 12px;
+  padding: 12px 8px;
   text-align: center;
-  color: #555;
-  font-size: 11px;
+  color: #666;
+  font-size: 10px;
   font-style: italic;
 }
 
 .fxchain-list__item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
+  gap: 4px;
+  padding: 2px 4px;
   cursor: pointer;
-  transition: background 0.1s;
   user-select: none;
+  font-size: 11px;
+  color: #000;
 }
 
 .fxchain-list__item:hover {
-  background: #222230;
+  background: #e5e5e5;
 }
 
 .fxchain-list__item.is-selected {
-  background: #2a3a5a;
+  background: #0a64dc;
+  color: #fff;
 }
 
 .fxchain-list__item.is-bypassed .fxchain-list__name {
-  color: #666;
+  color: #777;
   text-decoration: line-through;
-  text-decoration-color: #555;
 }
 
 .fxchain-list__checkbox {
   background: none;
   border: none;
-  color: #888;
+  color: #555;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   padding: 0;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  transition: color 0.15s;
 }
 
-.fxchain-list__checkbox.is-checked {
-  color: #4a9;
-}
-
-.fxchain-list__checkbox:hover {
+.fxchain-list__item.is-selected .fxchain-list__checkbox {
   color: #fff;
 }
 
 .fxchain-list__name {
   font-size: 11px;
-  color: #bbb;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -95,292 +125,101 @@
 .fxchain-list__actions {
   display: flex;
   gap: 4px;
-  padding: 6px 8px;
-  border-top: 1px solid #2a2a35;
+  padding: 4px;
+  background: #e0e0e0;
   flex-shrink: 0;
 }
 
 .fxchain-list__btn {
   flex: 1;
-  padding: 4px 0;
-  background: #222230;
-  border: 1px solid #3a3a48;
-  border-radius: 3px;
-  color: #aaa;
-  font-size: 10px;
-  font-weight: 600;
+  padding: 3px 0;
+  background: #e1e1e1;
+  border: 1px solid #707070;
+  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #999;
+  color: #000;
+  font-size: 11px;
   cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  transition: background 0.15s, color 0.15s;
+  text-align: center;
 }
 
-.fxchain-list__btn:hover:not(:disabled) {
-  background: #2a3a5a;
-  color: #fff;
+.fxchain-list__btn:active {
+  box-shadow: inset -1px -1px 0 #fff, inset 1px 1px 0 #999;
 }
 
 .fxchain-list__btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+  opacity: 0.5;
+  cursor: default;
+  box-shadow: none;
 }
 
-/* ── Plugin UI (panel derecho) ─────────────────────────────── */
-
+/* Panel derecho (Toolbar + GUI del plugin + Statusbar) */
 .fxchain-plugin-ui {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
   overflow: hidden;
+  background: #d4d4d4;
 }
 
-.fxchain-plugin-ui--empty {
-  justify-content: center;
-  align-items: center;
-}
-
-.fxchain-plugin-ui__header {
+.reaper-fx-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 6px 12px;
-  border-bottom: 1px solid #2a2a35;
-  background: #181822;
+  gap: 4px;
+  background-color: #d4d4d4;
+  border-bottom: 1px solid #a0a0a0;
+  padding: 4px 6px;
   flex-shrink: 0;
 }
 
-.fxchain-plugin-ui__name {
+.reaper-preset-select {
+  flex: 1;
+  height: 20px;
+  background: #fff;
+  border: 1px solid #707070;
   font-size: 11px;
-  font-weight: 600;
-  color: #ddd;
+  min-width: 80px;
 }
 
-.fxchain-plugin-ui__status {
-  font-size: 9px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 2px 6px;
-  border-radius: 3px;
+.reaper-tb-btn {
+  height: 20px;
+  padding: 0 6px;
+  background: #e1e1e1;
+  border: 1px solid #707070;
+  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #999;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
-.fxchain-plugin-ui__status.is-active {
-  color: #4a9;
-  background: rgba(68, 170, 153, 0.12);
+.reaper-knob-placeholder {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid #444;
+  background: conic-gradient(#777 0deg 270deg, #eee 270deg 360deg);
 }
 
-.fxchain-plugin-ui__status.is-bypassed {
-  color: #aa8800;
-  background: rgba(170, 136, 0, 0.12);
+.reaper-tb-bypass {
+  display: flex;
+  align-items: center;
+  margin-left: 2px;
 }
 
 .fxchain-plugin-ui__body {
   flex: 1;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  background: #111;
 }
 
-/* Variante scroll para el panel VST3 */
-.fxchain-plugin-ui__body--scroll {
-  align-items: flex-start;
-  justify-content: flex-start;
-  overflow-y: auto;
-  padding: 12px;
-}
-
-.fxchain-plugin-ui__placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  color: #555;
-  font-size: 12px;
-  width: 100%;
-}
-
-.fxchain-plugin-ui__icon {
-  font-size: 28px;
-  opacity: 0.5;
-}
-
-.fxchain-plugin-ui__hint {
-  font-size: 9px;
-  color: #444;
-  font-family: 'Courier New', monospace;
-  word-break: break-all;
-  text-align: center;
-  max-width: 280px;
-}
-
-.fxchain-plugin-ui__params {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
-}
-
-.fxchain-plugin-ui__param {
-  font-size: 9px;
-  color: #666;
-  background: #1a1a25;
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-family: 'Courier New', monospace;
-}
-
-/* ── VST3 Probe Panel ──────────────────────────────────────── */
-
-.vst3-probe {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.vst3-probe__header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #2a2a35;
-}
-
-.vst3-probe__icon {
-  font-size: 14px;
-}
-
-.vst3-probe__title {
-  font-size: 11px;
-  font-weight: 600;
-  color: #4a9;
-}
-
-.vst3-probe__no-classes {
-  font-size: 11px;
-  color: #555;
-  font-style: italic;
-  margin: 0;
-  padding: 8px 0;
-}
-
-.vst3-probe__footer {
-  padding-top: 8px;
-  border-top: 1px solid #1e1e28;
-  margin-top: 4px;
-}
-
-.vst3-probe__meta {
-  font-size: 9px;
-  color: #3a3a4a;
-  font-family: 'Courier New', monospace;
-}
-
-.vst3-probe__meta code {
-  color: #444;
-}
-
-/* Spinner animado */
-.vst3-probe__spinner {
-  display: inline-block;
-  animation: vst3-spin 1s linear infinite;
-}
-
-@keyframes vst3-spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-
-/* ── VST3 Classes ──────────────────────────────────────────── */
-
-.vst3-classes {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  width: 100%;
-}
-
-.vst3-class {
-  background: #1a1a28;
-  border: 1px solid #2a2a38;
-  border-radius: 4px;
-  padding: 6px 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.vst3-class__row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.vst3-class__row--main {
-  justify-content: space-between;
-}
-
-.vst3-class__row--sub {
-  gap: 6px;
-}
-
-.vst3-class__name {
-  font-size: 11px;
-  font-weight: 600;
-  color: #ccc;
-}
-
-/* Badges de categoría */
-.vst3-class__badge {
-  font-size: 8px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  padding: 1px 5px;
-  border-radius: 3px;
+.reaper-fx-statusbar {
+  background-color: #d4d4d4;
+  border-top: 1px solid #a0a0a0;
+  padding: 2px 8px;
+  font-size: 10px;
+  color: #333;
   flex-shrink: 0;
-}
-
-.vst3-class__badge--audio {
-  background: rgba(68, 170, 153, 0.15);
-  color: #4a9;
-  border: 1px solid rgba(68, 170, 153, 0.3);
-}
-
-.vst3-class__badge--controller {
-  background: rgba(100, 140, 220, 0.15);
-  color: #7af;
-  border: 1px solid rgba(100, 140, 220, 0.3);
-}
-
-.vst3-class__badge--compat {
-  background: rgba(180, 130, 50, 0.15);
-  color: #b85;
-  border: 1px solid rgba(180, 130, 50, 0.3);
-}
-
-.vst3-class__badge--other {
-  background: rgba(100, 100, 120, 0.15);
-  color: #778;
-  border: 1px solid rgba(100, 100, 120, 0.3);
-}
-
-.vst3-class__label {
-  font-size: 8px;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: #444;
-  letter-spacing: 0.4px;
-  width: 22px;
-  flex-shrink: 0;
-}
-
-.vst3-class__cid {
-  font-size: 9px;
-  color: #3d6080;
-  font-family: 'Courier New', monospace;
-  word-break: break-all;
-  letter-spacing: 0.5px;
 }

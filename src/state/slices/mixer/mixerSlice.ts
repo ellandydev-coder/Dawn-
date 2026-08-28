@@ -5,61 +5,24 @@ import {
   type MixerChannel,
   type MixerState as MixerModelState,
   createMixerChannel,
-  createDefaultMixerState,
 } from '@domain/models/MixerChannel';
 import type { PanLaw } from '@domain/enums/PanLaw';
+import { createMixerInitialState } from './mixerState';
+import {
+  MAX_CHANNEL_WIDTH,
+  MAX_CPU_USAGE,
+  MAX_HEADROOM,
+  MAX_PEAK_HOLD,
+  MAX_VOLUME,
+  MIN_CHANNEL_WIDTH,
+  MIN_CPU_USAGE,
+  MIN_HEADROOM,
+  MIN_PEAK_HOLD,
+  MIN_VOLUME,
+} from './mixerConstants';
+import { clamp, hasChannel } from './mixerHelpers';
 
-// ═══════════════════════════════════════════════════════════════
-// 🎯 CONSTANTES
-// ═══════════════════════════════════════════════════════════════
-
-const MIN_VOLUME = 0;
-const MAX_VOLUME = 1;
-const MIN_HEADROOM = -12;
-const MAX_HEADROOM = 0;
-const MIN_PEAK_HOLD = 0;
-const MAX_PEAK_HOLD = 10;
-const MIN_CHANNEL_WIDTH = 60;
-const MAX_CHANNEL_WIDTH = 200;
-const MIN_CPU_USAGE = 0;
-const MAX_CPU_USAGE = 1;
-
-// ═══════════════════════════════════════════════════════════════
-// 🎯 TIPOS
-// ═══════════════════════════════════════════════════════════════
-
-export interface MixerSliceState {
-  /** Estado global del mixer (master + configuración) */
-  global: MixerModelState;
-  /** Canales indexados por trackId */
-  channels: Record<string, MixerChannel>;
-  /** CPU usage 0-1 (runtime, no persistido) */
-  cpuUsage: number;
-}
-
-// ═══════════════════════════════════════════════════════════════
-// 🛠️ HELPERS
-// ═══════════════════════════════════════════════════════════════
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
-
-function hasChannel(state: MixerSliceState, trackId: string): boolean {
-  return trackId in state.channels;
-}
-
-const createInitialState = (): MixerSliceState => ({
-  global: createDefaultMixerState(),
-  channels: {},
-  cpuUsage: 0,
-});
-
-// ═══════════════════════════════════════════════════════════════
-// 🏪 SLICE
-// ═══════════════════════════════════════════════════════════════
-
-const initialState: MixerSliceState = createInitialState();
+const initialState = createMixerInitialState();
 
 const mixerSlice = createSlice({
   name: 'mixer',
@@ -89,10 +52,6 @@ const mixerSlice = createSlice({
       state.global.masterLimiterEnabled = action.payload;
     },
 
-    /**
-     * Headroom del master en dB (−12 a 0).
-     * 0 = sin headroom, −6 = 6dB de margen antes de limiter.
-     */
     setMasterHeadroom(state, action: PayloadAction<number>) {
       state.global.masterHeadroom = clamp(
         action.payload,
@@ -103,10 +62,6 @@ const mixerSlice = createSlice({
 
     // ─── MIXER CONFIG ───────────────────────────────────────
 
-    /**
-     * Pan law del mixer (−3dB, −4.5dB, −6dB, 0dB, custom).
-     * Viene de PanLaw enum, validado por Zod en el modelo.
-     */
     setPanLaw(state, action: PayloadAction<PanLaw>) {
       state.global.panLaw = action.payload;
     },
@@ -133,21 +88,12 @@ const mixerSlice = createSlice({
 
     // ─── CHANNEL CRUD ───────────────────────────────────────
 
-    /**
-     * Crea un canal de mixer para un track.
-     * Idempotente: no hace nada si ya existe.
-     */
     addChannel(state, action: PayloadAction<string>) {
       const trackId = action.payload;
       if (hasChannel(state, trackId)) return;
-
       state.channels[trackId] = createMixerChannel(trackId);
     },
 
-    /**
-     * Crea varios canales de una vez.
-     * Útil al cargar un proyecto completo.
-     */
     addChannels(state, action: PayloadAction<string[]>) {
       for (const trackId of action.payload) {
         if (hasChannel(state, trackId)) continue;
@@ -156,16 +102,9 @@ const mixerSlice = createSlice({
     },
 
     removeChannel(state, action: PayloadAction<string>) {
-      const trackId = action.payload;
-      if (!hasChannel(state, trackId)) return;
-
-      delete state.channels[trackId];
+      delete state.channels[action.payload];
     },
 
-    /**
-     * Elimina varios canales de una vez.
-     * Llamado desde deleteTrackCascade.
-     */
     removeChannels(state, action: PayloadAction<string[]>) {
       for (const trackId of action.payload) {
         delete state.channels[trackId];
@@ -180,7 +119,6 @@ const mixerSlice = createSlice({
     ) {
       const ch = state.channels[action.payload.trackId];
       if (!ch) return;
-
       ch.outputBusId = action.payload.outputBusId;
     },
 
@@ -188,7 +126,11 @@ const mixerSlice = createSlice({
 
     addInsertToChannel(
       state,
-      action: PayloadAction<{ trackId: string; insertId: string; index?: number }>
+      action: PayloadAction<{
+        trackId: string;
+        insertId: string;
+        index?: number;
+      }>
     ) {
       const ch = state.channels[action.payload.trackId];
       if (!ch) return;
@@ -209,7 +151,6 @@ const mixerSlice = createSlice({
     ) {
       const ch = state.channels[action.payload.trackId];
       if (!ch) return;
-
       ch.insertIds = ch.insertIds.filter(
         (id) => id !== action.payload.insertId
       );
@@ -238,7 +179,6 @@ const mixerSlice = createSlice({
     toggleInsertsBypassed(state, action: PayloadAction<string>) {
       const ch = state.channels[action.payload];
       if (!ch) return;
-
       ch.insertsBypassed = !ch.insertsBypassed;
     },
 
@@ -248,7 +188,6 @@ const mixerSlice = createSlice({
     ) {
       const ch = state.channels[action.payload.trackId];
       if (!ch) return;
-
       ch.insertsBypassed = action.payload.bypassed;
     },
 
@@ -260,11 +199,8 @@ const mixerSlice = createSlice({
     ) {
       const ch = state.channels[action.payload.trackId];
       if (!ch) return;
-
-      const { sendId } = action.payload;
-      if (ch.sendIds.includes(sendId)) return;
-
-      ch.sendIds.push(sendId);
+      if (ch.sendIds.includes(action.payload.sendId)) return;
+      ch.sendIds.push(action.payload.sendId);
     },
 
     removeSendFromChannel(
@@ -273,23 +209,17 @@ const mixerSlice = createSlice({
     ) {
       const ch = state.channels[action.payload.trackId];
       if (!ch) return;
-
       ch.sendIds = ch.sendIds.filter((id) => id !== action.payload.sendId);
     },
 
     // ─── CHANNEL METERING ───────────────────────────────────
 
-    /**
-     * Pre-fader meter: mide la señal antes del fader de volumen.
-     * Post-fader (default): mide lo que realmente sale.
-     */
     setMeterPreFader(
       state,
       action: PayloadAction<{ trackId: string; preFader: boolean }>
     ) {
       const ch = state.channels[action.payload.trackId];
       if (!ch) return;
-
       ch.meterPreFader = action.payload.preFader;
     },
 
@@ -299,7 +229,6 @@ const mixerSlice = createSlice({
     ) {
       const ch = state.channels[action.payload.trackId];
       if (!ch) return;
-
       ch.peakHoldSeconds = clamp(
         action.payload.seconds,
         MIN_PEAK_HOLD,
@@ -312,7 +241,6 @@ const mixerSlice = createSlice({
     toggleChannelAutomation(state, action: PayloadAction<string>) {
       const ch = state.channels[action.payload];
       if (!ch) return;
-
       ch.showAutomation = !ch.showAutomation;
     },
 
@@ -322,41 +250,25 @@ const mixerSlice = createSlice({
     ) {
       const ch = state.channels[action.payload.trackId];
       if (!ch) return;
-
       ch.showAutomation = action.payload.show;
     },
 
     // ─── RUNTIME ────────────────────────────────────────────
 
-    /**
-     * CPU usage reportado por AudioEngine (0-1).
-     * No se persiste en proyecto.
-     */
     setCpuUsage(state, action: PayloadAction<number>) {
       state.cpuUsage = clamp(action.payload, MIN_CPU_USAGE, MAX_CPU_USAGE);
     },
 
     // ─── BULK / PROYECTO ────────────────────────────────────
 
-    /**
-     * Reemplaza todos los canales (abrir proyecto).
-     */
     replaceChannels(state, action: PayloadAction<MixerChannel[]>) {
       state.channels = {};
-
       for (const channel of action.payload) {
         state.channels[channel.trackId] = channel;
       }
     },
 
-    /**
-     * Restaura la configuración global del mixer (abrir proyecto).
-     * No toca canales ni cpuUsage.
-     */
-    loadMixerConfig(
-      state,
-      action: PayloadAction<Partial<MixerModelState>>
-    ) {
+    loadMixerConfig(state, action: PayloadAction<Partial<MixerModelState>>) {
       const config = action.payload;
 
       if (config.masterVolume !== undefined) {
@@ -401,79 +313,52 @@ const mixerSlice = createSlice({
     },
 
     resetMixer() {
-      return createInitialState();
+      return createMixerInitialState();
     },
   },
 });
 
-// ═══════════════════════════════════════════════════════════════
-// 📤 EXPORTS: ACCIONES
-// ═══════════════════════════════════════════════════════════════
-
 export const {
-  // Master volume / mute
   setMasterVolume,
   toggleMasterMute,
   setMasterMuted,
-  // Master limiter
   toggleMasterLimiter,
   setMasterLimiterEnabled,
   setMasterHeadroom,
-  // Mixer config
   setPanLaw,
   setSoloIsExclusive,
   setChannelWidth,
   toggleShowSends,
   toggleShowInserts,
-  // Channel CRUD
   addChannel,
   addChannels,
   removeChannel,
   removeChannels,
-  // Channel routing
   setChannelOutput,
-  // Channel inserts
   addInsertToChannel,
   removeInsertFromChannel,
   reorderInsert,
   toggleInsertsBypassed,
   setInsertsBypassed,
-  // Channel sends
   addSendToChannel,
   removeSendFromChannel,
-  // Channel metering
   setMeterPreFader,
   setPeakHoldSeconds,
-  // Channel UI
   toggleChannelAutomation,
   setChannelAutomation,
-  // Runtime
   setCpuUsage,
-  // Bulk / proyecto
   replaceChannels,
   loadMixerConfig,
   resetMixer,
 } = mixerSlice.actions;
 
-// ═══════════════════════════════════════════════════════════════
-// 📤 EXPORTS: SELECTORES BÁSICOS
-// ═══════════════════════════════════════════════════════════════
-
-export const selectMixerSliceState = (state: { mixer: MixerSliceState }) =>
-  state.mixer;
-
-export const selectMixerGlobal = (state: { mixer: MixerSliceState }) =>
-  state.mixer.global;
-
-export const selectMixerChannels = (state: { mixer: MixerSliceState }) =>
-  state.mixer.channels;
-
-export const selectMixerCpuUsage = (state: { mixer: MixerSliceState }) =>
-  state.mixer.cpuUsage;
-
-export const selectMixerChannelByTrackId = (
-  state: { mixer: MixerSliceState },
-  trackId: string
-) => state.mixer.channels[trackId] ?? null;
-
 export default mixerSlice.reducer;
+
+export type { MixerSliceState } from './mixerState';
+export {
+  selectMixerSliceState,
+  selectMixerGlobal,
+  selectMixerChannels,
+  selectMixerCpuUsage,
+  selectMixerChannelByTrackId,
+} from './mixerSelectors';

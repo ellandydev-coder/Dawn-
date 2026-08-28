@@ -1,4 +1,7 @@
+// src/audio/graph/TrackAudioNode.ts
+
 import { MeterManager } from '@audio/metering/MeterManager';
+import { EffectChain } from '@audio/worklets/processors/EffectChain';
 
 /**
  * TrackAudioNode
@@ -7,15 +10,10 @@ import { MeterManager } from '@audio/metering/MeterManager';
  *
  * Cadena de señal:
  * ```
- *   input → trim → panner → gain → phaseInvert → output (bus/master)
+ *   input → trim → panner → gain → [fxChain] → phaseInvert → output (bus/master)
  *                                        │
- *                                        └──► meter (rama paralela)
+ *                                        └──► meter (rama paralela, post-gain)
  * ```
- *
- * Diseño:
- * - Esta clase NUNCA se guarda en Redux (no es serializable)
- * - Vive solo en el mundo del motor de audio
- * - Cada cambio de parámetro usa `setTargetAtTime` para evitar clicks
  */
 
 // ═══════════════════════════════════════════════════════════════
@@ -23,13 +21,9 @@ import { MeterManager } from '@audio/metering/MeterManager';
 // ═══════════════════════════════════════════════════════════════
 
 export interface TrackAudioNodeConfig {
-  /** Volumen inicial (0-1, default: 0.8) */
   volume?: number;
-  /** Pan inicial (-1 a 1, default: 0) */
   pan?: number;
-  /** Tiempo de fade al cambiar parámetros en segundos (default: 0.01) */
   fadeTime?: number;
-  /** Habilitar logs (default: true en dev) */
   verbose?: boolean;
 }
 
@@ -41,6 +35,7 @@ export interface TrackAudioNodeStats {
   muted: boolean;
   phaseInverted: boolean;
   hasMeter: boolean;
+  fxInsertCount: number;
   isDisposed: boolean;
 }
 
@@ -50,6 +45,7 @@ export type TrackAudioNodeEvent =
   | { type: 'trimChanged'; trim: number }
   | { type: 'muteChanged'; muted: boolean }
   | { type: 'phaseChanged'; inverted: boolean }
+  | { type: 'fxChainChanged'; insertCount: number }
   | { type: 'connected'; destination: AudioNode }
   | { type: 'disconnected' }
   | { type: 'disposed' };
@@ -78,12 +74,15 @@ export class TrackAudioNode {
   private _config: Required<TrackAudioNodeConfig>;
 
   // Nodos de la cadena
-  private _input: GainNode;         // Entrada de audio
-  private _trim: GainNode;          // Ganancia de entrada (trim)
+  private _input: GainNode;
+  private _trim: GainNode;
   private _panner: StereoPannerNode;
-  private _gain: GainNode;          // Volumen principal
-  private _phaseInvert: GainNode;   // Inversión de fase (-1 o +1)
+  private _gain: GainNode;
+  private _phaseInvert: GainNode;
   private _meter: AudioWorkletNode | null = null;
+
+  // ── FX Chain (NUEVO) ──
+  private _fxChain: EffectChain | null = null;
 
   // Estado
   private _volume: number;
@@ -116,7 +115,7 @@ export class TrackAudioNode {
     this._gain.gain.value = this._volume;
     this._phaseInvert.gain.value = 1;
 
-    // Conectar cadena principal
+    // Conectar cadena principal (sin FX por ahora)
     this._input.connect(this._trim);
     this._trim.connect(this._panner);
     this._panner.connect(this._gain);
@@ -129,13 +128,72 @@ export class TrackAudioNode {
   }
 
   // ─────────────────────────────────────────────
+  // FX Chain (NUEVO)
+  // ─────────────────────────────────────────────
+
+  /**
+   * Inicializa la cadena de efectos para esta track.
+   * Reconecta: gain → fxChain.input → fxChain.output → phaseInvert
+   *
+   * Debe llamarse una vez, típicamente cuando se añade el primer plugin.
+   */
+  public initFxChain(): EffectChain {
+    if (this._fxChain) return this._fxChain;
+
+    this._fxChain = new EffectChain(this.id, this._ctx);
+
+    // Reconectar: gain → fx → phaseInvert
+    try { this._gain.disconnect(); } catch { /* */ }
+    this._gain.connect(this._fxChain.input);
+    this._fxChain.output.connect(this._phaseInvert);
+
+    this._log(`FX chain inicializada`);
+    this._emit({ type: 'fxChainChanged', insertCount: 0 });
+
+    return this._fxChain;
+  }
+
+  /** Devuelve la EffectChain si existe, o null */
+  public getFxChain(): EffectChain | null {
+    return this._fxChain;
+  }
+
+  /**
+   * Añade un insert VST3 a la cadena de efectos.
+   * Crea la FX chain si no existe.
+   */
+  public async addFxInsert(
+    pluginKey: string,
+    instanceId: string,
+    sampleRate?: number,
+    maxBlockSize?: number
+  ): Promise<boolean> {
+    const chain = this._fxChain ?? this.initFxChain();
+    const sr = sampleRate ?? this._ctx.sampleRate;
+    const success = await chain.addInsert(
+      pluginKey,
+      instanceId,
+      sr,
+      maxBlockSize
+    );
+
+    if (success) {
+      this._emit({
+        type: 'fxChainChanged',
+        insertCount: chain.insertCount,
+      });
+    }
+
+    return success;
+  }
+
+  // ─────────────────────────────────────────────
   // Meter
   // ─────────────────────────────────────────────
 
   private _attachMeter(): void {
     try {
       this._meter = MeterManager.createMeter(this.id, this._ctx);
-      // El meter va después del gain pero antes de phaseInvert
       this._gain.connect(this._meter);
     } catch (err) {
       this._log(`Meter no disponible: ${err}`, 'warn');
@@ -143,7 +201,6 @@ export class TrackAudioNode {
     }
   }
 
-  /** Devuelve el AudioWorkletNode del meter, o null si no está disponible */
   public getMeterNode(): AudioWorkletNode | null {
     return this._meter;
   }
@@ -152,7 +209,6 @@ export class TrackAudioNode {
   // Conexión / desconexión
   // ─────────────────────────────────────────────
 
-  /** Conecta la salida de la pista a otro nodo (bus o master). */
   public connect(destination: AudioNode): void {
     this._assertNotDisposed();
     this._phaseInvert.connect(destination);
@@ -169,7 +225,6 @@ export class TrackAudioNode {
     }
   }
 
-  /** Nodo de entrada donde se conectan los clips/instrumentos. */
   public get input(): GainNode {
     this._assertNotDisposed();
     return this._input;
@@ -181,54 +236,35 @@ export class TrackAudioNode {
 
   public setVolume(value: number): void {
     if (this._isDisposed) return;
-
     const clamped = Math.max(0, Math.min(1, value));
     if (this._volume === clamped) return;
-
     this._volume = clamped;
-
     if (!this._muted) {
       this._gain.gain.setTargetAtTime(
-        clamped,
-        this._ctx.currentTime,
-        this._config.fadeTime
+        clamped, this._ctx.currentTime, this._config.fadeTime
       );
     }
-
     this._emit({ type: 'volumeChanged', volume: clamped });
   }
 
-  public getVolume(): number {
-    return this._volume;
-  }
+  public getVolume(): number { return this._volume; }
 
   // ─────────────────────────────────────────────
-  // Trim (ganancia de entrada)
+  // Trim
   // ─────────────────────────────────────────────
 
-  /**
-   * Ajusta el trim/gain de entrada (0-4, permite hasta +12dB).
-   * Útil para nivelar diferentes fuentes antes del volumen principal.
-   */
   public setTrim(value: number): void {
     if (this._isDisposed) return;
-
     const clamped = Math.max(0, Math.min(4, value));
     if (this._trimGain === clamped) return;
-
     this._trimGain = clamped;
     this._trim.gain.setTargetAtTime(
-      clamped,
-      this._ctx.currentTime,
-      this._config.fadeTime
+      clamped, this._ctx.currentTime, this._config.fadeTime
     );
-
     this._emit({ type: 'trimChanged', trim: clamped });
   }
 
-  public getTrim(): number {
-    return this._trimGain;
-  }
+  public getTrim(): number { return this._trimGain; }
 
   // ─────────────────────────────────────────────
   // Pan
@@ -236,23 +272,16 @@ export class TrackAudioNode {
 
   public setPan(value: number): void {
     if (this._isDisposed) return;
-
     const clamped = Math.max(-1, Math.min(1, value));
     if (this._pan === clamped) return;
-
     this._pan = clamped;
     this._panner.pan.setTargetAtTime(
-      clamped,
-      this._ctx.currentTime,
-      this._config.fadeTime
+      clamped, this._ctx.currentTime, this._config.fadeTime
     );
-
     this._emit({ type: 'panChanged', pan: clamped });
   }
 
-  public getPan(): number {
-    return this._pan;
-  }
+  public getPan(): number { return this._pan; }
 
   // ─────────────────────────────────────────────
   // Mute
@@ -261,80 +290,43 @@ export class TrackAudioNode {
   public setMuted(muted: boolean): void {
     if (this._isDisposed) return;
     if (this._muted === muted) return;
-
     this._muted = muted;
     const target = muted ? 0 : this._volume;
-
     this._gain.gain.setTargetAtTime(
-      target,
-      this._ctx.currentTime,
-      this._config.fadeTime
+      target, this._ctx.currentTime, this._config.fadeTime
     );
-
     this._emit({ type: 'muteChanged', muted });
   }
 
-  public isMuted(): boolean {
-    return this._muted;
-  }
+  public isMuted(): boolean { return this._muted; }
 
   // ─────────────────────────────────────────────
   // Phase invert
   // ─────────────────────────────────────────────
 
-  /**
-   * Invierte la fase de la señal (útil para corregir problemas de fase
-   * entre micrófonos o pistas duplicadas).
-   */
   public setPhaseInvert(inverted: boolean): void {
     if (this._isDisposed) return;
     if (this._phaseInverted === inverted) return;
-
     this._phaseInverted = inverted;
-    // Cambio instantáneo (sin fade) porque es un flip binario
     this._phaseInvert.gain.setValueAtTime(
-      inverted ? -1 : 1,
-      this._ctx.currentTime
+      inverted ? -1 : 1, this._ctx.currentTime
     );
-
     this._emit({ type: 'phaseChanged', inverted });
   }
 
-  public isPhaseInverted(): boolean {
-    return this._phaseInverted;
-  }
+  public isPhaseInverted(): boolean { return this._phaseInverted; }
 
   // ─────────────────────────────────────────────
-  // Send taps (REAPER-style)
+  // Send taps
   // ─────────────────────────────────────────────
 
-  /**
-   * Devuelve el nodo desde el cual un Send debe tomar la señal.
-   *
-   * REAPER-style tap points:
-   * - **pre-fader**: después del trim/panner, ANTES del volumen (gain).
-   *   Tap = `_panner`. La señal ya está paneada pero sin fader aplicado.
-   * - **post-fader**: después del volumen, ANTES del phaseInvert.
-   *   Tap = `_gain`. La señal refleja el volumen final del track
-   *   (y el mute, ya que mute se implementa reduciendo `_gain` a 0).
-   *
-   * Ambos taps están ANTES del phaseInvert, así que los sends
-   * NO heredan la inversión de fase del track (comportamiento
-   * REAPER estándar: phase invert es solo para el output principal).
-   *
-   * Consumido típicamente por `RoutingGraph.createSend()` al construir
-   * un `SendReturnNode`.
-   *
-   * @param preFader true  = tap pre-fader (panner)
-   *                 false = tap post-fader (gain, respeta mute)
-   */
   public getSendSource(preFader: boolean): AudioNode {
     this._assertNotDisposed();
     return preFader ? this._panner : this._gain;
   }
 
   // ─────────────────────────────────────────────
-  // Sistema de eventos
+  // Eventos
   // ─────────────────────────────────────────────
 
   public on(listener: TrackAudioNodeListener): () => void {
@@ -344,16 +336,14 @@ export class TrackAudioNode {
 
   private _emit(event: TrackAudioNodeEvent): void {
     this._listeners.forEach((listener) => {
-      try {
-        listener(event);
-      } catch (err) {
+      try { listener(event); } catch (err) {
         console.error(`[TrackAudioNode:${this.id}] Error en listener:`, err);
       }
     });
   }
 
   // ─────────────────────────────────────────────
-  // Estado y métricas
+  // Stats
   // ─────────────────────────────────────────────
 
   public getStats(): TrackAudioNodeStats {
@@ -365,17 +355,13 @@ export class TrackAudioNode {
       muted: this._muted,
       phaseInverted: this._phaseInverted,
       hasMeter: this._meter !== null,
+      fxInsertCount: this._fxChain?.insertCount ?? 0,
       isDisposed: this._isDisposed,
     };
   }
 
-  public get isDisposed(): boolean {
-    return this._isDisposed;
-  }
-
-  public get context(): AudioContext {
-    return this._ctx;
-  }
+  public get isDisposed(): boolean { return this._isDisposed; }
+  public get context(): AudioContext { return this._ctx; }
 
   // ─────────────────────────────────────────────
   // Cleanup
@@ -383,18 +369,22 @@ export class TrackAudioNode {
 
   public dispose(): void {
     if (this._isDisposed) return;
-
     try {
-      // Desconectar todo en orden inverso
-      try { this._phaseInvert.disconnect(); } catch { /* ignore */ }
-      try { this._gain.disconnect(); } catch { /* ignore */ }
-      try { this._panner.disconnect(); } catch { /* ignore */ }
-      try { this._trim.disconnect(); } catch { /* ignore */ }
-      try { this._input.disconnect(); } catch { /* ignore */ }
+      try { this._phaseInvert.disconnect(); } catch { /* */ }
+      try { this._gain.disconnect(); } catch { /* */ }
+      try { this._panner.disconnect(); } catch { /* */ }
+      try { this._trim.disconnect(); } catch { /* */ }
+      try { this._input.disconnect(); } catch { /* */ }
+
+      // FX chain
+      if (this._fxChain) {
+        this._fxChain.dispose();
+        this._fxChain = null;
+      }
 
       // Meter
       if (this._meter) {
-        try { this._meter.disconnect(); } catch { /* ignore */ }
+        try { this._meter.disconnect(); } catch { /* */ }
         MeterManager.removeMeter(this.id);
         this._meter = null;
       }
@@ -402,7 +392,6 @@ export class TrackAudioNode {
       this._isDisposed = true;
       this._emit({ type: 'disposed' });
       this._listeners.clear();
-
       this._log(`Disposed`);
     } catch (err) {
       this._log(`Error en dispose: ${err}`, 'error');
@@ -421,7 +410,6 @@ export class TrackAudioNode {
 
   private _log(msg: string, level: 'info' | 'warn' | 'error' = 'info'): void {
     if (!this._config.verbose && level === 'info') return;
-
     const prefix = `[TrackAudioNode:${this.id}]`;
     switch (level) {
       case 'error': console.error(prefix, msg); break;

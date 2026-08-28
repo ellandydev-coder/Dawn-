@@ -6,6 +6,11 @@ import {
   setMasterVolume,
   toggleMasterMute,
 } from '@state/slices/mixer/mixerSlice';
+import {
+  openFxBrowser,
+  toggleFxChainWindow,
+} from '@state/slices/ui/uiSlice';
+import { selectFxChainByOwnerId } from '@state/slices/fxChains/fxChainsSlice';
 import { FaderControl } from './FaderControl';
 import { useMeter } from '@audio/hooks/useMeter';
 import {
@@ -19,6 +24,7 @@ import './MasterChannel.css';
 // Constantes
 // ═══════════════════════════════════════════
 
+const MASTER_OWNER_ID = 'master';
 const NUM_SEGMENTS = 30;
 const DB_MIN = -54;
 const DB_MAX = 12;
@@ -107,6 +113,7 @@ export interface MasterChannelProps {
  * ✔ MeterColumn extraído y memoizado
  * ✔ Helpers puros fuera del componente
  * ✔ Compatible con undo/redo
+ * ✔ FX button: toggle chain si tiene plugins, abre browser si no
  */
 function MasterChannelBase({ onVolumeCommit }: MasterChannelProps) {
   const dispatch = useAppDispatch();
@@ -115,6 +122,12 @@ function MasterChannelBase({ onVolumeCommit }: MasterChannelProps) {
   const masterVolume = useAppSelector((s) => s.mixer.global.masterVolume);
   const masterMuted  = useAppSelector((s) => s.mixer.global.masterMuted);
   const meter        = useMeter('master');
+
+  // ─── FX chain del master ────────────────
+  const fxChain = useAppSelector((s) =>
+    selectFxChainByOwnerId(s, MASTER_OWNER_ID)
+  );
+  const hasFxPlugins = (fxChain?.plugins.length ?? 0) > 0;
 
   // ─── Handlers estables ──────────────────
   const handleVolumeChange = useCallback(
@@ -141,6 +154,18 @@ function MasterChannelBase({ onVolumeCommit }: MasterChannelProps) {
     () => dispatch(toggleMasterMute()),
     [dispatch]
   );
+
+  /**
+   * FX click master — misma lógica que TrackHeader / ChannelStrip.
+   * ownerId = 'master' para que la ventana FX se asocie al bus master.
+   */
+  const handleFxClick = useCallback(() => {
+    if (hasFxPlugins) {
+      dispatch(toggleFxChainWindow(MASTER_OWNER_ID));
+    } else {
+      dispatch(openFxBrowser(MASTER_OWNER_ID));
+    }
+  }, [dispatch, hasFxPlugins]);
 
   // ─── Derivados memoizados ───────────────
   const rmsPct = useMemo(
@@ -282,9 +307,18 @@ function MasterChannelBase({ onVolumeCommit }: MasterChannelProps) {
 
           <button
             type="button"
-            className="master-btn btn-fx"
-            title="Cadena de efectos"
-            aria-label="Abrir cadena de efectos"
+            className={`master-btn btn-fx${hasFxPlugins ? ' btn-fx--active' : ''}`}
+            onClick={handleFxClick}
+            title={
+              hasFxPlugins
+                ? 'Ver/ocultar cadena de efectos del master'
+                : 'Añadir efecto al master'
+            }
+            aria-label={
+              hasFxPlugins
+                ? 'Ver/ocultar cadena de efectos del master'
+                : 'Añadir efecto al master'
+            }
           >
             FX
           </button>

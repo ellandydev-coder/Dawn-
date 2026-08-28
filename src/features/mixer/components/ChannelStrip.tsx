@@ -1,6 +1,12 @@
 // src/features/mixer/components/ChannelStrip.tsx
 
 import { memo, useCallback, useMemo } from 'react';
+import { useAppDispatch, useAppSelector } from '@state/store';
+import {
+  openFxBrowser,
+  toggleFxChainWindow,
+} from '@state/slices/ui/uiSlice';
+import { selectFxChainByOwnerId } from '@state/slices/fxChains/fxChainsSlice';
 import { FaderControl } from './FaderControl';
 import { PanKnob } from '@shared/components/PanKnob';
 import { useMixerChannel } from '@state/hooks/useMixerChannel';
@@ -43,6 +49,7 @@ export interface ChannelStripProps {
  *
  * ✔ onCommit conectado en fader y pan para undo/redo por gesto
  * ✔ Delete delegado al hook (que maneja onBeforeDelete internamente)
+ * ✔ FX button: toggle chain si tiene plugins, abre browser si no
  */
 function ChannelStripBase({
   trackId,
@@ -51,11 +58,17 @@ function ChannelStripBase({
   onVolumeCommitted,
   onPanCommitted,
 }: ChannelStripProps) {
+  const dispatch = useAppDispatch();
+
   const { track, isSelected, dbLabel, handlers } = useMixerChannel(trackId, {
     onBeforeDelete,
     onVolumeCommitted,
     onPanCommitted,
   });
+
+  // ─── FX chain state (misma lógica que TrackHeader) ──
+  const fxChain = useAppSelector((s) => selectFxChainByOwnerId(s, trackId));
+  const hasFxPlugins = (fxChain?.plugins.length ?? 0) > 0;
 
   // ─── Handlers estables ──────────────────
 
@@ -113,6 +126,23 @@ function ChannelStripBase({
       handlers.onToggleArm();
     },
     [stopPropagation, handlers]
+  );
+
+  /**
+   * FX click — misma lógica C que TrackHeader:
+   *   tiene plugins → toggle FX Chain window
+   *   sin plugins   → abre FX Browser
+   */
+  const handleFxClick = useCallback(
+    (e: React.MouseEvent) => {
+      stopPropagation(e);
+      if (hasFxPlugins) {
+        dispatch(toggleFxChainWindow(trackId));
+      } else {
+        dispatch(openFxBrowser(trackId));
+      }
+    },
+    [stopPropagation, dispatch, trackId, hasFxPlugins]
   );
 
   // ─── Derivados memoizados ───────────────
@@ -223,10 +253,18 @@ function ChannelStripBase({
 
           <button
             type="button"
-            className="chstrip-side-btn btn-fx"
-            onClick={stopPropagation}
-            title="Cadena de efectos"
-            aria-label="Abrir cadena de efectos"
+            className={`chstrip-side-btn btn-fx${hasFxPlugins ? ' btn-fx--active' : ''}`}
+            onClick={handleFxClick}
+            title={
+              hasFxPlugins
+                ? 'Ver/ocultar cadena de efectos'
+                : 'Añadir efecto a la track'
+            }
+            aria-label={
+              hasFxPlugins
+                ? 'Ver/ocultar cadena de efectos'
+                : 'Añadir efecto a la track'
+            }
           >
             FX
           </button>

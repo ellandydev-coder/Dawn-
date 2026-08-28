@@ -1,0 +1,127 @@
+/* src/features/fx-chain/components/GenericPluginParams.css */
+
+.reaper-fx-panel {
+  display: flex;
+  flex: 1;
+  height: 100%;
+  background-color: #d4d4d4;
+  color: #000;
+  font-family: 'MS Sans Serif', Tahoma, sans-serif;
+  font-size: 11px;
+  user-select: none;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* VÚmetros laterales */
+.reaper-vumeter {
+  width: 32px;
+  background-color: #072212;
+  border: 1px solid #707070;
+  display: flex;
+  flex-direction: row;
+  padding: 2px 1px;
+  box-sizing: border-box;
+}
+
+.reaper-vumeter__ticks {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: 8px;
+  color: #88c098;
+  padding-right: 2px;
+  text-align: right;
+  width: 20px;
+}
+
+.reaper-vumeter__bar-container {
+  flex: 1;
+  background: #000;
+  border: 1px solid #1a582e;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+}
+
+.reaper-vumeter__bar {
+  width: 100%;
+  background: linear-gradient(to top, #00ff44 0%, #ffff00 85%, #ff0000 100%);
+  transition: height 0.05s ease-out;
+}
+
+/* Panel Central */
+.reaper-params-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px;
+  background-color: #d4d4d4;
+  overflow-y: auto;
+}
+
+.reaper-plugin-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.reaper-plugin-title {
+  font-size: 12px;
+  font-weight: bold;
+  color: #111;
+}
+
+.reaper-btn-edit {
+  position: absolute;
+  right: 0;
+  padding: 1px 8px;
+  font-size: 11px;
+  background: #e1e1e1;
+  border: 1px solid #707070;
+  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #999;
+  cursor: pointer;
+}
+
+.reaper-params-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 480px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.reaper-param-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.reaper-param-label {
+  width: 130px;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reaper-slider-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.reaper-slider {
+  width: 100%;
+  accent-color: #666;
+  cursor: pointer;
+}
+
+.reaper-param-value {
+  width: 45px;
+  text-align: right;
+  font-family: monospace;
+}

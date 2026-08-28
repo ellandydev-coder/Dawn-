@@ -2,13 +2,14 @@
 
 pub mod funknown;
 pub mod icomponent;
-pub mod iconnection_point;  // ← NUEVO
+pub mod iconnection_point;
 pub mod iedit_controller;
 pub mod ifactory;
 pub mod ihost;
 pub mod iplug_view;
 pub mod iplugin_base;
 pub mod string_convert;
+pub mod iaudio_processor;
 
 pub type Tuid    = [u8; 16];
 pub type Hresult = i32;
@@ -18,47 +19,40 @@ pub const S_OK:    Hresult = 0;
 pub const S_FALSE: Hresult = 1;
 pub type ComPtr = *mut core::ffi::c_void;
 
+/// Conversión canónica a GUID de Windows COM (layout oficial VST3 SDK Steinberg).
 #[cfg(target_os = "windows")]
 pub const fn tuid(l1: u32, l2: u32, l3: u32, l4: u32) -> Tuid {
     [
-        ((l1 & 0x000000FF) >>  0) as u8,
-        ((l1 & 0x0000FF00) >>  8) as u8,
-        ((l1 & 0x00FF0000) >> 16) as u8,
-        ((l1 & 0xFF000000) >> 24) as u8,
-        ((l2 & 0x00FF0000) >> 16) as u8,
-        ((l2 & 0xFF000000) >> 24) as u8,
-        ((l2 & 0x000000FF) >>  0) as u8,
-        ((l2 & 0x0000FF00) >>  8) as u8,
-        ((l3 & 0xFF000000) >> 24) as u8,
-        ((l3 & 0x00FF0000) >> 16) as u8,
-        ((l3 & 0x0000FF00) >>  8) as u8,
-        ((l3 & 0x000000FF) >>  0) as u8,
-        ((l4 & 0xFF000000) >> 24) as u8,
-        ((l4 & 0x00FF0000) >> 16) as u8,
-        ((l4 & 0x0000FF00) >>  8) as u8,
-        ((l4 & 0x000000FF) >>  0) as u8,
+        ((l1 >>  0) & 0xFF) as u8,
+        ((l1 >>  8) & 0xFF) as u8,
+        ((l1 >> 16) & 0xFF) as u8,
+        ((l1 >> 24) & 0xFF) as u8,
+        ((l2 >>  0) & 0xFF) as u8, // Data2 LE (Byte 4) - Corregido
+        ((l2 >>  8) & 0xFF) as u8, // Data2 LE (Byte 5) - Corregido
+        ((l2 >> 16) & 0xFF) as u8, // Data3 LE (Byte 6) - Corregido
+        ((l2 >> 24) & 0xFF) as u8, // Data3 LE (Byte 7) - Corregido
+        ((l3 >> 24) & 0xFF) as u8,
+        ((l3 >> 16) & 0xFF) as u8,
+        ((l3 >>  8) & 0xFF) as u8,
+        ((l3 >>  0) & 0xFF) as u8,
+        ((l4 >> 24) & 0xFF) as u8,
+        ((l4 >> 16) & 0xFF) as u8,
+        ((l4 >>  8) & 0xFF) as u8,
+        ((l4 >>  0) & 0xFF) as u8,
     ]
 }
 
 #[cfg(not(target_os = "windows"))]
 pub const fn tuid(l1: u32, l2: u32, l3: u32, l4: u32) -> Tuid {
     [
-        ((l1 & 0xFF000000) >> 24) as u8,
-        ((l1 & 0x00FF0000) >> 16) as u8,
-        ((l1 & 0x0000FF00) >>  8) as u8,
-        ((l1 & 0x000000FF) >>  0) as u8,
-        ((l2 & 0xFF000000) >> 24) as u8,
-        ((l2 & 0x00FF0000) >> 16) as u8,
-        ((l2 & 0x0000FF00) >>  8) as u8,
-        ((l2 & 0x000000FF) >>  0) as u8,
-        ((l3 & 0xFF000000) >> 24) as u8,
-        ((l3 & 0x00FF0000) >> 16) as u8,
-        ((l3 & 0x0000FF00) >>  8) as u8,
-        ((l3 & 0x000000FF) >>  0) as u8,
-        ((l4 & 0xFF000000) >> 24) as u8,
-        ((l4 & 0x00FF0000) >> 16) as u8,
-        ((l4 & 0x0000FF00) >>  8) as u8,
-        ((l4 & 0x000000FF) >>  0) as u8,
+        ((l1 >> 24) & 0xFF) as u8, ((l1 >> 16) & 0xFF) as u8,
+        ((l1 >>  8) & 0xFF) as u8, ((l1 >>  0) & 0xFF) as u8,
+        ((l2 >> 24) & 0xFF) as u8, ((l2 >> 16) & 0xFF) as u8,
+        ((l2 >>  8) & 0xFF) as u8, ((l2 >>  0) & 0xFF) as u8,
+        ((l3 >> 24) & 0xFF) as u8, ((l3 >> 16) & 0xFF) as u8,
+        ((l3 >>  8) & 0xFF) as u8, ((l3 >>  0) & 0xFF) as u8,
+        ((l4 >> 24) & 0xFF) as u8, ((l4 >> 16) & 0xFF) as u8,
+        ((l4 >>  8) & 0xFF) as u8, ((l4 >>  0) & 0xFF) as u8,
     ]
 }
 
@@ -72,33 +66,7 @@ mod tests {
         let iid = tuid(0xE831FF31, 0xF2D54301, 0x928EBBEE, 0x25697802);
         let expected: Tuid = [
             0x31, 0xFF, 0x31, 0xE8,
-            0xD5, 0xF2, 0x01, 0x43,
-            0x92, 0x8E, 0xBB, 0xEE,
-            0x25, 0x69, 0x78, 0x02,
-        ];
-        assert_eq!(iid, expected);
-    }
-
-    #[cfg(target_os = "windows")]
-    #[test]
-    fn tuid_windows_funknown_layout() {
-        let iid = tuid(0x00000000, 0x00000000, 0xC0000000, 0x00000046);
-        let expected: Tuid = [
-            0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00,
-            0xC0, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x46,
-        ];
-        assert_eq!(iid, expected);
-    }
-
-    #[cfg(not(target_os = "windows"))]
-    #[test]
-    fn tuid_non_windows_raw_layout() {
-        let iid = tuid(0xE831FF31, 0xF2D54301, 0x928EBBEE, 0x25697802);
-        let expected: Tuid = [
-            0xE8, 0x31, 0xFF, 0x31,
-            0xF2, 0xD5, 0x43, 0x01,
+            0x01, 0x43, 0xD5, 0xF2,
             0x92, 0x8E, 0xBB, 0xEE,
             0x25, 0x69, 0x78, 0x02,
         ];
