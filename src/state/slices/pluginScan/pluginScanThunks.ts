@@ -1,4 +1,4 @@
-// src/services/plugins/pluginScanner.thunks.ts
+// src/state/slices/pluginScan/pluginScanThunks.ts
 
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import type { RootState, AppDispatch } from '@state/store';
@@ -7,10 +7,10 @@ import {
   scanProgressUpdated,
   scanFinished,
   scanFailed,
-} from '@state/slices/pluginScan/pluginScanSlice';
+} from './pluginScanSlice';
 import { FxCatalog } from '@services/fx-catalog/FxCatalog';
-import { PluginScanner } from './PluginScanner';
-import type { ScannedPlugin } from './pluginScanner.types';
+import { PluginScanner } from '@services/plugins/PluginScanner';
+import type { ScannedPlugin } from '@services/plugins/pluginScanner.types';
 import type { FxPluginInfo } from '@domain/models/FxPluginInfo';
 
 // ═══════════════════════════════════════════════════════════════

@@ -2,7 +2,7 @@
 //
 // Gestiona la cadena de inserts VST3 para una track.
 
-import { vst3Bridge } from '@services/plugins/vst3';
+import { vst3Bridge } from '@audio/plugins/vst3';
 import { VST3_INSERT_PROCESSOR_NAME, VST3_MAX_BLOCK } from '../shared/WorkletConstants';
 
 export interface EffectInsert {

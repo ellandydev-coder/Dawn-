@@ -38,7 +38,7 @@ pub fn create_popup_plugin_window(
 
     let hwnd = unsafe {
         CreateWindowExW(
-            WS_EX_TOOLWINDOW,
+            WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
             PCWSTR(class_name.as_ptr()),
             PCWSTR::null(),
             WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
@@ -49,6 +49,15 @@ pub fn create_popup_plugin_window(
             None,
         ).map_err(|e| e.to_string())?
     };
+
+    unsafe {
+        let _ = SetWindowPos(
+            hwnd,
+            HWND_TOP,
+            pt.x, pt.y, w, h,
+            SWP_NOACTIVATE | SWP_SHOWWINDOW,
+        );
+    }
 
     Ok(hwnd.0 as usize)
 }

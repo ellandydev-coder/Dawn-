@@ -13,7 +13,7 @@ import {
   selectLastScanDate,
   selectFoundIds,
 } from '@state/slices/pluginScan/pluginScanSlice';
-import { startPluginScan } from '@services/plugins/pluginScanner.thunks';
+import { startPluginScan } from '@state/slices/pluginScan/pluginScanThunks';
 import {
   VST_KNOB_MODES,
   VST_AUTOMATION_NOTIFICATION_MODES,

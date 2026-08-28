@@ -1,7 +1,6 @@
 // src/services/shortcuts/registry/shortcuts.types.ts
 
 import type { Store } from '@reduxjs/toolkit';
-import type { RootState, AppDispatch } from '@state/store';
 import type { RegistryEntry } from '@shared/registry/registry.types';
 import type { ShortcutDefinition } from '../shortcutTypes';
 
@@ -10,10 +9,10 @@ import type { ShortcutDefinition } from '../shortcutTypes';
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * Store tipado con AppDispatch para soportar thunks.
+ * Store tipado con dispatch para soportar thunks.
  * Se importa aquí para exponerlo desde el barrel público.
  */
-export type TypedStore = Store<RootState> & { dispatch: AppDispatch };
+export type TypedStore = Store & { dispatch: (action: any) => any };
 
 /**
  * Contexto que se pasa a cada grupo de shortcuts al construirlo.
@@ -21,8 +20,8 @@ export type TypedStore = Store<RootState> & { dispatch: AppDispatch };
  * tenga que importar `store` directamente (rompería boundaries).
  */
 export interface ShortcutCtx {
-  readonly dispatch: AppDispatch;
-  readonly getState: () => RootState;
+  readonly dispatch: (action: any) => any;
+  readonly getState: () => any;
 }
 
 /**
