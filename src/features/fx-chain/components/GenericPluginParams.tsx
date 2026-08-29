@@ -54,7 +54,19 @@ function GenericPluginParamsBase({ instance, onParamChange }: GenericPluginParam
       <div className="reaper-params-container">
         <div className="reaper-plugin-header">
           <span className="reaper-plugin-title">{instance.displayName}</span>
-          <button type="button" className="reaper-btn-edit">Edit...</button>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button
+              type="button"
+              className="reaper-btn-edit"
+              onClick={() => {
+                const resetEvent = new CustomEvent('reset-params', { detail: instance.id });
+                window.dispatchEvent(resetEvent);
+              }}
+            >
+              Reset
+            </button>
+            <button type="button" className="reaper-btn-edit">Edit...</button>
+          </div>
         </div>
 
         <div className="reaper-params-list">

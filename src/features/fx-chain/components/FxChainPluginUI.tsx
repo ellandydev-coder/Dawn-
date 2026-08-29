@@ -14,7 +14,14 @@ function isVst3Plugin(pluginId: string): boolean {
 }
 
 function extractBundlePath(pluginId: string): string {
-  return pluginId.slice('vst3:'.length);
+  if (!pluginId.startsWith('vst3:')) {
+    throw new Error(`pluginId no es VST3: ${pluginId}`);
+  }
+  const path = pluginId.slice('vst3:'.length);
+  if (!path || path.length === 0) {
+    throw new Error('bundlePath vacío para plugin VST3');
+  }
+  return path;
 }
 
 function FxChainPluginUIBase({ instance }: FxChainPluginUIProps) {
