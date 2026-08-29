@@ -29,7 +29,7 @@ export function findAudioModuleClass(load: Vst3LoadResult): Vst3ClassInfo | null
   );
 }
 
-export async function ensureInstance(bundlePath: string, instanceId: string): Promise<void> {
+export async function ensureInstance(bundlePath: string, instanceId: string): Promise<string> {
   const load = await loadPluginEnsuringClasses(bundlePath);
   const pluginKey = load.plugin_key!;
 
@@ -40,7 +40,7 @@ export async function ensureInstance(bundlePath: string, instanceId: string): Pr
     if (!existing.initialized) {
       await vst3Commands.initializeInstance(pluginKey, instanceId);
     }
-    return;
+    return pluginKey;
   }
 
   const audioClass = findAudioModuleClass(load);
@@ -58,4 +58,5 @@ export async function ensureInstance(bundlePath: string, instanceId: string): Pr
     await vst3Commands.releaseInstance(pluginKey, instanceId);
     throw new Error(`initializeInstance failed: ${init.message}`);
   }
+  return pluginKey;
 }

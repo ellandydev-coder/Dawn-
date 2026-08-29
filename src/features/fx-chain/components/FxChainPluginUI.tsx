@@ -55,6 +55,7 @@ function FxChainPluginUIBase({ instance }: FxChainPluginUIProps) {
           <EmbeddedVst3View
             bundlePath={extractBundlePath(instance.pluginId)}
             instanceId={instance.id}
+            instance={instance}
           />
         ) : (
           <GenericPluginParams instance={instance} />

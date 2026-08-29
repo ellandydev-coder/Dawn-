@@ -1,6 +1,6 @@
 // src/features/fx-chain/hooks/useEmbeddedEditorBounds.ts
 
-import { useEffect, useRef, type RefObject } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { vst3Bridge } from '@audio/plugins/vst3';
 
@@ -9,9 +9,10 @@ export function useEmbeddedEditorBounds(
   bundlePath: string,
   instanceId: string
 ) {
+  const [hasFailed, setHasFailed] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const isOpenedRef = useRef<boolean>(false);
   const isOpeningRef = useRef<boolean>(false);
-  const hasFailedRef = useRef<boolean>(false);
   const lastBoundsRef = useRef<{ x: number; y: number; w: number; h: number }>({
     x: 0,
     y: 0,
@@ -19,13 +20,20 @@ export function useEmbeddedEditorBounds(
     h: 0,
   });
   const animFrameRef = useRef<number | null>(null);
+  const pluginKeyRef = useRef<string | null>(null);
+  const hasFailedRefSync = useRef<boolean>(false);
+
+  useEffect(() => {
+    hasFailedRefSync.current = hasFailed;
+  }, [hasFailed]);
 
   useEffect(() => {
     let cancelled = false;
-    hasFailedRef.current = false;
+    setHasFailed(false);
+    setErrorMessage(null);
 
     const checkAndSyncBounds = async () => {
-      if (!containerRef.current || cancelled || hasFailedRef.current) return;
+      if (!containerRef.current || cancelled || hasFailedRefSync.current) return;
       const rect = containerRef.current.getBoundingClientRect();
 
       if (rect.width === 0 || rect.height === 0) return;
@@ -43,14 +51,15 @@ export function useEmbeddedEditorBounds(
         isOpeningRef.current = true;
         lastBoundsRef.current = { x, y, w, h };
         try {
-          await vst3Bridge.ensureInstance(bundlePath, instanceId);
+          const pluginKey = await vst3Bridge.ensureInstance(bundlePath, instanceId);
+          pluginKeyRef.current = pluginKey;
           if (cancelled) {
             isOpeningRef.current = false;
             return;
           }
 
           const res = await invoke<{ success: boolean; message: string }>('vst3_open_editor', {
-            pluginKey: bundlePath,
+            pluginKey,
             instanceId,
             x,
             y,
@@ -61,7 +70,7 @@ export function useEmbeddedEditorBounds(
           if (cancelled) {
             isOpeningRef.current = false;
             if (res.success) {
-              invoke('vst3_close_editor', { pluginKey: bundlePath, instanceId }).catch(() => {});
+              invoke('vst3_close_editor', { pluginKey: pluginKeyRef.current ?? bundlePath, instanceId }).catch(() => {});
             }
             return;
           }
@@ -70,11 +79,14 @@ export function useEmbeddedEditorBounds(
             isOpenedRef.current = true;
             console.info('[useEmbeddedEditorBounds] Editor VST3 abierto:', res.message);
           } else {
-            hasFailedRef.current = true;
+            setHasFailed(true);
+            setErrorMessage(res.message);
             console.warn('[useEmbeddedEditorBounds] Error abriendo editor VST3:', res.message);
           }
         } catch (e) {
-          hasFailedRef.current = true;
+          setHasFailed(true);
+          const msg = e instanceof Error ? e.message : String(e);
+          setErrorMessage(msg);
           console.error('[useEmbeddedEditorBounds] Excepción abriendo editor nativo:', e);
         } finally {
           isOpeningRef.current = false;
@@ -82,7 +94,7 @@ export function useEmbeddedEditorBounds(
       } else if (isOpenedRef.current && hasMovedOrResized) {
         lastBoundsRef.current = { x, y, w, h };
         invoke('vst3_update_editor_bounds', {
-          pluginKey: bundlePath,
+          pluginKey: pluginKeyRef.current ?? bundlePath,
           instanceId,
           x,
           y,
@@ -93,8 +105,13 @@ export function useEmbeddedEditorBounds(
     };
 
     const loop = () => {
+      if (hasFailedRefSync.current) {
+        return;
+      }
       checkAndSyncBounds();
-      animFrameRef.current = requestAnimationFrame(loop);
+      if (!hasFailedRefSync.current) {
+        animFrameRef.current = requestAnimationFrame(loop);
+      }
     };
 
     animFrameRef.current = requestAnimationFrame(loop);
@@ -107,8 +124,10 @@ export function useEmbeddedEditorBounds(
       if (isOpenedRef.current || isOpeningRef.current) {
         isOpenedRef.current = false;
         isOpeningRef.current = false;
-        invoke('vst3_close_editor', { pluginKey: bundlePath, instanceId }).catch(() => {});
+        invoke('vst3_close_editor', { pluginKey: pluginKeyRef.current ?? bundlePath, instanceId }).catch(() => {});
       }
     };
   }, [containerRef, bundlePath, instanceId]);
+
+  return { hasFailed, errorMessage };
 }
