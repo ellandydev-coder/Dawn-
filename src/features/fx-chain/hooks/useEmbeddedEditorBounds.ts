@@ -81,13 +81,17 @@ export function useEmbeddedEditorBounds(
           } else {
             setHasFailed(true);
             setErrorMessage(res.message);
-            console.warn('[useEmbeddedEditorBounds] Error abriendo editor VST3:', res.message);
+            if (import.meta.env?.DEV) {
+              console.warn('[useEmbeddedEditorBounds] Editor VST3 no disponible:', res.message);
+            }
           }
         } catch (e) {
           setHasFailed(true);
           const msg = e instanceof Error ? e.message : String(e);
           setErrorMessage(msg);
-          console.error('[useEmbeddedEditorBounds] Excepción abriendo editor nativo:', e);
+          if (import.meta.env?.DEV) {
+            console.error('[useEmbeddedEditorBounds] Excepción abriendo editor nativo:', e);
+          }
         } finally {
           isOpeningRef.current = false;
         }

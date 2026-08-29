@@ -13,20 +13,23 @@ interface EmbeddedVst3ViewProps {
 
 export function EmbeddedVst3View({ bundlePath, instanceId, instance }: EmbeddedVst3ViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { hasFailed, errorMessage } = useEmbeddedEditorBounds(containerRef, bundlePath, instanceId);
+  const { hasFailed } = useEmbeddedEditorBounds(containerRef, bundlePath, instanceId);
 
   if (hasFailed) {
     return (
-      <div className="embedded-vst3-container" style={{ width: '100%', height: '100%', minHeight: '350px', background: '#111', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ color: '#ff6666', padding: 16, fontSize: 13, borderBottom: '1px solid #333' }}>
-          ⚠️ Editor nativo no disponible
+      <div className="embedded-vst3-container" style={{ width: '100%', height: '100%', minHeight: '350px', background: '#16181d', display: 'flex', flexDirection: 'column', borderRadius: 8, overflow: 'hidden', border: '1px solid #2a2d35' }}>
+        <div style={{ background: '#1e2028', padding: '12px 16px', borderBottom: '1px solid #2a2d35', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 18 }}>🎛️</span>
+          <div>
+            <div style={{ fontWeight: 600, color: '#e8e8e8', fontSize: 13 }}>{instance?.displayName ?? 'Plugin VST3'}</div>
+            <div style={{ color: '#888', fontSize: 11 }}>Controles del plugin (interfaz nativa no disponible)</div>
+          </div>
         </div>
-        <div style={{ color: '#aaa', padding: 16, fontSize: 12 }}>
-          {errorMessage || 'El plugin no provee interfaz gráfica (createView devolvió NULL)'}
+        <div style={{ flex: 1, overflow: 'auto' }}>
+          {instance ? <GenericPluginParams instance={instance} /> : (
+            <div style={{ padding: 20, color: '#aaa', fontSize: 13 }}>No hay parámetros disponibles.</div>
+          )}
         </div>
-        {instance ? (
-          <GenericPluginParams instance={instance} />
-        ) : null}
       </div>
     );
   }
@@ -35,12 +38,7 @@ export function EmbeddedVst3View({ bundlePath, instanceId, instance }: EmbeddedV
     <div
       ref={containerRef}
       className="embedded-vst3-container"
-      style={{
-        width: '100%',
-        height: '100%',
-        minHeight: '350px',
-        background: '#111',
-      }}
+      style={{ width: '100%', height: '100%', minHeight: '350px', background: '#111' }}
     />
   );
 }
