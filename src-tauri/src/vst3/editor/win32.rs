@@ -27,7 +27,7 @@ pub fn create_popup_plugin_window(
 
     let wc = WNDCLASSEXW {
         cbSize: std::mem::size_of::<WNDCLASSEXW>() as u32,
-        style: CS_HREDRAW | CS_VREDRAW | CS_OWNDC, // CS_OWNDC obligatorio para plugins con GPU (OpenGL/D3D)
+        style: CS_HREDRAW | CS_VREDRAW | CS_OWNDC,
         lpfnWndProc: Some(container_wnd_proc),
         hInstance: hinstance.into(),
         lpszClassName: PCWSTR(class_name.as_ptr()),
@@ -38,7 +38,7 @@ pub fn create_popup_plugin_window(
 
     let hwnd = unsafe {
         CreateWindowExW(
-            WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
+            WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_TOPMOST,
             PCWSTR(class_name.as_ptr()),
             PCWSTR::null(),
             WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
@@ -53,7 +53,7 @@ pub fn create_popup_plugin_window(
     unsafe {
         let _ = SetWindowPos(
             hwnd,
-            HWND_TOP,
+            HWND_TOPMOST,
             pt.x, pt.y, w, h,
             SWP_NOACTIVATE | SWP_SHOWWINDOW,
         );

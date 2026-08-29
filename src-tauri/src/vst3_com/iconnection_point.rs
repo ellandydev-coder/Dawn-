@@ -8,9 +8,9 @@ use std::os::raw::c_void;
 use super::{tuid, funknown, Hresult, Tuid, S_OK};
 use super::funknown::FUnknownVtable;
 
-/// IID de IConnectionPoint — 7B4FA160-E4CD-4A74-86A5-0616AA93D49F
+/// IID de IConnectionPoint OFICIAL Steinberg — 8B911542-4E7A-4A99-9C95-886F7B2807C1
 pub const IID_ICONNECTION_POINT: Tuid =
-    tuid(0x7B4FA160, 0xE4CD4A74, 0x86A50616, 0xAA93D49F);
+    tuid(0x8B911542, 0x4E7A4A99, 0x9C95886F, 0x7B2807C1);
 
 #[repr(C)]
 pub struct IConnectionPointVtable {
@@ -50,7 +50,6 @@ unsafe fn vtable(this: *mut c_void) -> Option<&'static IConnectionPointVtable> {
     Some(&*vt)
 }
 
-/// Llama a `connect` en un objeto IConnectionPoint.
 pub unsafe fn connect(this: *mut c_void, other: *mut c_void) -> Hresult {
     match vtable(this) {
         Some(vt) => (vt.connect)(this, other),
@@ -58,7 +57,6 @@ pub unsafe fn connect(this: *mut c_void, other: *mut c_void) -> Hresult {
     }
 }
 
-/// Llama a `disconnect` en un objeto IConnectionPoint.
 pub unsafe fn disconnect(this: *mut c_void, other: *mut c_void) -> Hresult {
     match vtable(this) {
         Some(vt) => (vt.disconnect)(this, other),
@@ -67,9 +65,6 @@ pub unsafe fn disconnect(this: *mut c_void, other: *mut c_void) -> Hresult {
 }
 
 /// Conecta bidireccionalmente un Component y un EditController.
-/// (Component ↔ Controller Peer Connection)
-///
-/// Si alguno de los dos no soporta IConnectionPoint, no hace nada y devuelve S_OK (best effort).
 pub unsafe fn connect_peers(component: *mut c_void, controller: *mut c_void) -> Hresult {
     if component.is_null() || controller.is_null() {
         return S_OK;
@@ -77,7 +72,7 @@ pub unsafe fn connect_peers(component: *mut c_void, controller: *mut c_void) -> 
 
     let comp_cp = match funknown::query_interface(component, &IID_ICONNECTION_POINT) {
         Ok(ptr) => ptr,
-        Err(_) => return S_OK, // Best effort si el plugin no usa IConnectionPoint
+        Err(_) => return S_OK, // Best effort
     };
 
     let ctrl_cp = match funknown::query_interface(controller, &IID_ICONNECTION_POINT) {

@@ -11,6 +11,7 @@ export function useEmbeddedEditorBounds(
 ) {
   const isOpenedRef = useRef<boolean>(false);
   const isOpeningRef = useRef<boolean>(false);
+  const hasFailedRef = useRef<boolean>(false);
   const lastBoundsRef = useRef<{ x: number; y: number; w: number; h: number }>({
     x: 0,
     y: 0,
@@ -21,9 +22,10 @@ export function useEmbeddedEditorBounds(
 
   useEffect(() => {
     let cancelled = false;
+    hasFailedRef.current = false;
 
     const checkAndSyncBounds = async () => {
-      if (!containerRef.current || cancelled) return;
+      if (!containerRef.current || cancelled || hasFailedRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
 
       if (rect.width === 0 || rect.height === 0) return;
@@ -68,9 +70,11 @@ export function useEmbeddedEditorBounds(
             isOpenedRef.current = true;
             console.info('[useEmbeddedEditorBounds] Editor VST3 abierto:', res.message);
           } else {
+            hasFailedRef.current = true;
             console.warn('[useEmbeddedEditorBounds] Error abriendo editor VST3:', res.message);
           }
         } catch (e) {
+          hasFailedRef.current = true;
           console.error('[useEmbeddedEditorBounds] Excepción abriendo editor nativo:', e);
         } finally {
           isOpeningRef.current = false;

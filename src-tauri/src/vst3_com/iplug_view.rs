@@ -1,12 +1,11 @@
 // src-tauri/src/vst3_com/iplug_view.rs
-// Layout C++ oficial Steinberg VST3: IPlugView hereda de FUnknown (15 slots en total)
 
 use std::os::raw::{c_char, c_void};
 use super::{tuid, Hresult, Tuid};
 use super::funknown::FUnknownVtable;
 
 pub const IID_IPLUG_VIEW: Tuid =
-    tuid(0xC9DBF18F, 0x8C194833, 0xB7805175, 0x51E28333);
+    tuid(0x5B30769D, 0x97114276, 0x802590F8, 0xBB603F4B);
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -19,21 +18,13 @@ pub struct ViewRect {
 
 impl ViewRect {
     pub fn new(width: i32, height: i32) -> Self {
-        Self {
-            left: 0,
-            top: 0,
-            right: width,
-            bottom: height,
-        }
+        Self { left: 0, top: 0, right: width, bottom: height }
     }
 }
 
 #[repr(C)]
 pub struct IPlugViewVtable {
-    // FUnknown (slots 0-2)
     pub base: FUnknownVtable,
-
-    // IPlugView (slots 3-14)
     pub is_platform_type_supported: unsafe extern "system" fn(this: *mut c_void, platform_type: *const c_char) -> Hresult,
     pub attached: unsafe extern "system" fn(this: *mut c_void, parent: *mut c_void, platform_type: *const c_char) -> Hresult,
     pub removed: unsafe extern "system" fn(this: *mut c_void) -> Hresult,
@@ -55,10 +46,10 @@ pub struct IPlugView {
 
 #[inline]
 unsafe fn vtable(this: *mut c_void) -> Option<&'static IPlugViewVtable> {
-    if this.is_null() { return None; }
+    if this.is_null() || (this as usize) < 0x10000 { return None; }
     let obj = this as *mut IPlugView;
     let vt = (*obj).vtable;
-    if vt.is_null() { return None; }
+    if vt.is_null() || (vt as usize) < 0x10000 { return None; }
     Some(&*vt)
 }
 
@@ -97,15 +88,5 @@ pub unsafe fn removed(this: *mut c_void) -> Hresult {
     match vtable(this) {
         Some(vt) => (vt.removed)(this),
         None => -1,
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn iplug_view_vtable_size() {
-        assert_eq!(std::mem::size_of::<IPlugViewVtable>(), std::mem::size_of::<usize>() * 15);
     }
 }

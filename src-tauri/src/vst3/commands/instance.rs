@@ -6,9 +6,15 @@ use super::super::registry::{make_instance_id, ComponentInstance, InstanceInfo, 
 use super::super::cid::parse_cid;
 
 #[cfg(target_os = "windows")]
+use crate::vst3_com::funknown;
+#[cfg(target_os = "windows")]
+use crate::vst3_com::funknown::IID_FUNKNOWN;
+#[cfg(target_os = "windows")]
 use crate::vst3_com::ifactory;
 #[cfg(target_os = "windows")]
 use crate::vst3_com::icomponent::IID_ICOMPONENT;
+#[cfg(target_os = "windows")]
+use crate::vst3_com::iplugin_base;
 
 #[tauri::command]
 pub fn vst3_create_instance(
@@ -51,11 +57,40 @@ pub fn vst3_create_instance(
                 &IID_ICOMPONENT,
             ) {
                 Ok(ptr) => ptr,
-                Err(hr) => return CreateInstanceResult {
-                    success: false,
-                    message: format!("createInstance falló: 0x{:08X}", hr as u32),
-                    instance_id: None, component_ptr: None, class_cid,
-                },
+                Err(hr) => {
+                    // Fallback para plugins (ej: Auto-Tune Pro) que no soportan IID_ICOMPONENT
+                    // directamente en createInstance y requieren IID_FUNKNOWN + QueryInterface.
+                    match ifactory::create_instance(
+                        factory_ptr as *mut _,
+                        &cid_bytes,
+                        &IID_FUNKNOWN,
+                    ) {
+                        Ok(raw_ptr) => {
+                            match funknown::query_interface(raw_ptr, &IID_ICOMPONENT) {
+                                Ok(comp) => {
+                                    funknown::release(raw_ptr);
+                                    comp
+                                }
+                                Err(q_hr) => {
+                                    funknown::release(raw_ptr);
+                                    return CreateInstanceResult {
+                                        success: false,
+                                        message: format!(
+                                            "createInstance falló: 0x{:08X} (QI IComponent: 0x{:08X})",
+                                            hr as u32, q_hr as u32
+                                        ),
+                                        instance_id: None, component_ptr: None, class_cid,
+                                    };
+                                }
+                            }
+                        }
+                        Err(_) => return CreateInstanceResult {
+                            success: false,
+                            message: format!("createInstance falló: 0x{:08X}", hr as u32),
+                            instance_id: None, component_ptr: None, class_cid,
+                        },
+                    }
+                }
             }
         };
 
@@ -73,7 +108,6 @@ pub fn vst3_create_instance(
 
         if registered.is_none() {
             unsafe {
-                use crate::vst3_com::funknown;
                 funknown::release(component_ptr);
             }
             return CreateInstanceResult {
@@ -154,7 +188,6 @@ pub fn vst3_initialize_instance(
 ) -> InitializeResult {
     #[cfg(target_os = "windows")]
     {
-        use crate::vst3_com::{funknown, iplugin_base};
         use crate::vst3_com::iplugin_base::IID_IPLUGIN_BASE;
         use crate::vst3_host_context::DawnHost;
 
@@ -251,8 +284,6 @@ pub fn vst3_terminate_instance(
 ) -> bool {
     #[cfg(target_os = "windows")]
     {
-        use crate::vst3_com::{funknown, iplugin_base};
-
         let plugin_base_ptr = registry.with_plugin_mut(&plugin_key, |p| {
             let inst = p.instances.get_mut(&instance_id)?;
             if !inst.initialized || inst.plugin_base_ptr == 0 { return None; }
